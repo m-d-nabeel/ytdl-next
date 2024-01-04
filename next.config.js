@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {}
+const nextConfig = {
+  env: {
+    FLUENTFFMPEG_COV: "",
+  },
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
