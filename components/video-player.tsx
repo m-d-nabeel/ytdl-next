@@ -1,35 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
 
-export default function VideoPlayer({ path }: { path: string }) {
-  const [isMounted, setIsMounted] = useState(false);
+function VideoPlayer({ title }: { title: string }) {
+  const router = useRouter();
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
   useEffect(() => {
-    setIsMounted(true);
-  }, [path]);
+    const fetchVideo = async () => {
+      try {
+        const response = await fetch(
+          `/api/stream/${encodeURIComponent(title)}`
+        );
 
-  if (!isMounted) {
-    return (
-      <div className="flex flex-col items-center justify-center w-full h-full">
-        <div className="w-32 h-32 border-8 border-gray-300 border-t-slate-800 rounded-full animate-spin" />
-      </div>
-    );
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        setVideoUrl(url);
+      } catch (error) {
+        console.error("There was a problem fetching the video:", error);
+      }
+    };
+
+    fetchVideo();
+  }, [title]);
+
+  if (!videoUrl) {
+    return null;
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full">
-      <video autoPlay={false} controls className="w-auto h-[360px]">
-        <source src={path} type="video/mp4" />
+    <div className="w-full flex flex-col items-center">
+      <video controls className="h-[360px]">
+        <source src={videoUrl} type="video/mp4" />
         Your browser does not support the video tag.
       </video>
       <Link
-        href={path}
         download
-        className="border rounded-md px-4 py-2 bg-blue-500 text-white hover:bg-blue-600"
+        href={videoUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        referrerPolicy="no-referrer"
+        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
       >
         Download
       </Link>
     </div>
   );
 }
+
+export default VideoPlayer;

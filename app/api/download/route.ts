@@ -24,9 +24,9 @@ export async function POST(req: Request) {
     });
 
     const videoTitle = info.videoDetails.title.replace(/[^a-z0-9]/gi, "_");
-    const videoPath = process.cwd() + `/public/video/${randomUUID()}.mp4`;
-    const audioPath = process.cwd() + `/public/video/${randomUUID()}.mp3`;
-    const mixedPath = process.cwd() + `/public/video/${videoTitle}.mp4`;
+    const videoPath = `/tmp/video/${randomUUID()}.mp4`;
+    const audioPath = `/tmp/video/${randomUUID()}.mp3`;
+    const mixedPath = `/tmp/video/${videoTitle}.mp4`;
 
     const videoPromise = new Promise<void>((resolve, reject) => {
       video.pipe(fs.createWriteStream(videoPath));
@@ -66,10 +66,10 @@ export async function POST(req: Request) {
       .on("end", () => {
         console.log("Audio and video merged successfully.");
         fs.rm(audioPath, (error) => {
-          console.error("Error deleting audio file:", error);
+          !!error && console.error("Error deleting audio file:", error);
         });
         fs.rm(videoPath, (error) => {
-          console.error("Error deleting video file:", error);
+          !!error && console.error("Error deleting video file:", error);
         });
       })
       .on("error", (error: any) => {
@@ -92,12 +92,13 @@ export async function POST(req: Request) {
 
 function deleteTimer(path: string) {
   console.log("Timer set");
-
   setTimeout(() => {
     fs.unlink(path, (error) => {
-      console.error("Error deleting file:", error);
-      return new NextResponse("Internal Error", { status: 500 });
+      if (error) {
+        console.error("Error deleting file:", error);
+      } else {
+        console.log("File deleted successfully.");
+      }
     });
   }, 15 * 60 * 1000);
-  console.log("Timer set");
 }
