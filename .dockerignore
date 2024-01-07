@@ -1,17 +1,5 @@
-# Ignore node_modules folder (as it will be installed within the container)
 node_modules
-
-# Ignore build output and development-related files
-.next
-out
-.cache
-.env
-.DS_Store
-
-# Ignore other development and editor-specific files
 .vscode
-.idea
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+.cache
+Dockerfile
+.dockerignore

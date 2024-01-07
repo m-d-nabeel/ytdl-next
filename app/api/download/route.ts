@@ -58,6 +58,7 @@ export async function POST(req: Request) {
       return new NextResponse("Download Failed in server", { status: 500 });
     }
 
+    Ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
     Ffmpeg()
       .input(videoPath)
       .input(audioPath)
