@@ -45,8 +45,11 @@ export default function LinkForm() {
         console.log("No title in Response");
         return;
       }
-      title = encodeURIComponent(title.replaceAll("_", "="));
-      router.push(`/video/${title}`);
+      title = encodeURIComponent(title);
+      setTimeout(() => {
+        router.push(`/video/${title}`);
+      }, 1000);
+      // router.push(`/video/${title}`);
     } catch (error) {
       console.log("Form Submit Error");
     }

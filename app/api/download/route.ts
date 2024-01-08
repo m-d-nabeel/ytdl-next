@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       .outputOptions(["-acodec copy", "-vcodec copy"])
       .output(mixedPath)
       .on("end", () => {
-        console.log("Audio and video merged successfully.");
+        console.log("Audio and video merged successfully.", mixedPath);
         fs.rm(audioPath, (error) => {
           !!error && console.error("Error deleting audio file:", error);
         });

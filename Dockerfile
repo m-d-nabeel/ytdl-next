@@ -4,8 +4,7 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN apk add --no-cache ffmpeg \
-    && npm install
+RUN apk add ffmpeg && npm install
 
 RUN mkdir -p /usr/src/video
 RUN mkdir -p /tmp/video

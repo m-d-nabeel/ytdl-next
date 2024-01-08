@@ -8,7 +8,7 @@
 
 # testing
 /coverage
-
+commands.sh
 # next.js
 /.next/
 /out/

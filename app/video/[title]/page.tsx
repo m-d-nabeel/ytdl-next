@@ -6,7 +6,7 @@ type VideoProps = {
   };
 };
 export default function Video({ params }: VideoProps) {
-  const title = decodeURIComponent(params.title).replaceAll("=", "_");
+  const title = decodeURIComponent(params.title);
   return (
     <div className="flex justify-center items-center h-full w-full">
       <VideoPlayer title={title} />
