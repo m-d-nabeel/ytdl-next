@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
@@ -49,13 +48,20 @@ function VideoPlayer({ title }: { title: string }) {
 
   return (
     <div className="w-full flex flex-col items-center">
-      <video controls className="h-[360px]">
-        <source src={videoUrl ?? ""} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      <iframe
+        src={videoUrl ?? ""}
+        referrerPolicy="no-referrer"
+        rel="noreferrer"
+        title="Embedded youtube"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+        loading="lazy"
+        allowFullScreen
+        className="w-auto h-[360px]"
+      ></iframe>
       <Link
         download
         href={videoUrl ?? "#"}
+        media="all"
         target="_blank"
         rel="noopener noreferrer"
         referrerPolicy="no-referrer"

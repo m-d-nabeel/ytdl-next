@@ -12,44 +12,54 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useStore } from "@/hooks/use-store";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   url: z.string().url(),
+  quality: z.enum(["low", "medium", "high", "audio_only"]),
 });
 export default function LinkForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       url: "",
+      quality: "medium",
     },
   });
 
   const router = useRouter();
 
+  const { setVideoDetails } = useStore();
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch("/api/download", {
-        method: "POST",
-        body: JSON.stringify({
-          url: values.url,
-        }),
-      });
+      const response = await fetch(
+        "/api/download/" + encodeURIComponent(values.url),
+        {
+          method: "POST",
+          body: JSON.stringify({ quality: values.quality }),
+        }
+      );
       if (!response.ok) {
-        console.log("Illegal Response from Server");
+        console.log("Illegal Response(Not Ok) from Server");
         return;
       }
-      const data = await response.json();
-      let { title, info } = data;
-      if (!title) {
+      const data = (await response.json()) as YTVideoDetail;
+      if (!data.title) {
         console.log("No title in Response");
         return;
       }
-      title = encodeURIComponent(title);
-      setTimeout(() => {
-        router.push(`/video/${title}`);
-      }, 1000);
-      // router.push(`/video/${title}`);
+      const title = encodeURIComponent(data.title);
+      setVideoDetails(data);
+      router.push(`/video/${title}`);
     } catch (error) {
       console.log("Form Submit Error");
     }
@@ -65,16 +75,47 @@ export default function LinkForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-full">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="gap-3 w-full grid grid-cols-2"
+      >
         <FormField
           control={form.control}
           name="url"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>URL</FormLabel>
+            <FormItem className="col-span-2">
+              <FormLabel className="text-sm font-semibold">URL</FormLabel>
               <FormControl>
                 <Input placeholder="Enter url" {...field} />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quality"
+          render={({ field }) => (
+            <FormItem className="col-span-2">
+              <FormLabel className="text-sm font-semibold">QUALITY</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl className="uppercase font-semibold text-sm">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent defaultValue={"MEDIUM"}>
+                  {formSchema.shape.quality.options.map((option) => (
+                    <SelectItem
+                      className="uppercase font-semibold text-sm"
+                      key={option}
+                      value={option}
+                    >
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

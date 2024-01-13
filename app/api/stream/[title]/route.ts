@@ -21,9 +21,11 @@ async function getVideoStream(title: string) {
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
 
+    const contType = title.endsWith(".mp4") ? "video/mp4" : "audio/mp3";
+
     const headers = {
       "Accept-Ranges": "bytes",
-      "Content-Type": "video/mp4",
+      "Content-Type": contType,
       "Content-Length": `${fileSize}`,
     };
 
@@ -42,13 +44,6 @@ export async function GET(
 ) {
   try {
     const response = await getVideoStream(params.title);
-    // set blob in CSP
-
-    // response.headers.set(
-    //   "Content-Security-Policy",
-    //   "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; font-src 'self'; frame-src 'self'; object-src 'self'; child-src 'self'; form-action 'self'; upgrade-insecure-requests; block-all-mixed-content; disown-opener; sandbox allow-forms allow-same-origin allow-scripts; reflected-xss block; referrer no-referrer; base-uri 'none';"
-    // );
-
     return response;
   } catch (error: any) {
     console.error("GET Error:", error);

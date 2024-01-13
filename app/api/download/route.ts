@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       console.error("Error downloading audio and video:", error);
       return new NextResponse("Download Failed in server", { status: 500 });
     }
-
+    
     Ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
     Ffmpeg()
       .input(videoPath)
@@ -88,6 +88,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.log("Download Server Error");
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
