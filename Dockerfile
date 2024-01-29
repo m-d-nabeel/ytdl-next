@@ -6,11 +6,8 @@ COPY package*.json ./
 
 RUN apk add ffmpeg && npm install
 
-RUN mkdir -p /usr/src/video
-RUN mkdir -p /tmp/video
-RUN chmod 777 /tmp/video
-
-
+RUN mkdir -p /tmp/downloaded
+RUN chmod 777 /tmp/downloaded
 COPY . .
 
 RUN npm run build

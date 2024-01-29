@@ -1,5 +1,4 @@
 import LinkForm from "@/components/link-form";
-import VideoDetails from "@/components/video-details";
 
 export default function Home() {
   return (

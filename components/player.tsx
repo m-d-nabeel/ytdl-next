@@ -4,11 +4,11 @@ import React, { useEffect, useState } from "react";
 
 export const revalidate = 0;
 
-function VideoPlayer({ title }: { title: string }) {
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+function Player({ title }: { title: string }) {
+  const [fileStreamUrl, setFileStreamUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchVideo = async () => {
+    const fetchFileStream = async () => {
       try {
         const response = await fetch(
           `/api/stream/${encodeURIComponent(title)}`,
@@ -18,38 +18,32 @@ function VideoPlayer({ title }: { title: string }) {
         );
 
         if (!response.ok) {
-          console.log("Illegal Response from Server", response);
+          console.log("Response Not OK", response);
           throw new Error("Network response was not ok");
         }
 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
-        setVideoUrl(url);
+        setFileStreamUrl(url);
       } catch (error) {
-        console.error("There was a problem fetching the video:", error);
+        console.error("There was a problem fetching the FileStream:", error);
       }
     };
 
-    fetchVideo()
-      .then((_) => {
-        console.log("Video Fetched");
-      })
-      .catch((_) => {
-        console.log("Video Fetch Error");
-      });
+    fetchFileStream();
   }, [title]);
 
-  if (!videoUrl)
+  if (!fileStreamUrl) {
     return (
       <div className="w-full flex flex-col items-center">
         <p className="text-2xl">Loading...</p>
       </div>
     );
-
+  }
   return (
     <div className="w-full flex flex-col items-center">
       <iframe
-        src={videoUrl ?? ""}
+        src={fileStreamUrl ?? ""}
         referrerPolicy="no-referrer"
         rel="noreferrer"
         title="Embedded youtube"
@@ -59,9 +53,8 @@ function VideoPlayer({ title }: { title: string }) {
         className="w-auto h-[360px]"
       ></iframe>
       <Link
-        download
-        href={videoUrl ?? "#"}
-        media="all"
+        download={`${title}`}
+        href={fileStreamUrl ?? "#"}
         target="_blank"
         rel="noopener noreferrer"
         referrerPolicy="no-referrer"
@@ -73,4 +66,4 @@ function VideoPlayer({ title }: { title: string }) {
   );
 }
 
-export default VideoPlayer;
+export default Player;

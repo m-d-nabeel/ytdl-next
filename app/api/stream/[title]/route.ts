@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 async function getVideoStream(title: string) {
   try {
-    const videoDir = path.join("/", "tmp", "video");
+    const videoDir = path.join("/", "tmp", "downloaded");
     const filePath = path.join(videoDir, title);
 
     console.log("getVideoStream path:", filePath);
@@ -21,17 +21,18 @@ async function getVideoStream(title: string) {
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
 
-    const contType = title.endsWith(".mp4") ? "video/mp4" : "audio/mp3";
+    const contentType = title.endsWith(".mp4") ? "video/mp4" : "audio/mpeg";
 
     const headers = {
       "Accept-Ranges": "bytes",
-      "Content-Type": contType,
-      "Content-Length": `${fileSize}`,
+      "Content-Type": contentType,
+      "Content-Length": fileSize.toString(),
+      "Content-Disposition": `attachment; filename="${title}"`,
     };
 
     const videoStream: any = fs.createReadStream(filePath);
     console.log("videoStream created");
-    return new Response(videoStream, { status: 200, headers });
+    return new NextResponse(videoStream, { status: 200, headers });
   } catch (error) {
     console.error("getVideoStream Error:", error);
     return new Response("Internal Server Error", { status: 500 });

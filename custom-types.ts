@@ -1,4 +1,4 @@
-type YTVideoDetail = {
+export type YTVideoDetail = {
   title: string;
   embed:
     | {

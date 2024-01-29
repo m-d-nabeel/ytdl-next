@@ -1,7 +1,7 @@
 "use client";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/select";
 import { useStore } from "@/hooks/use-store";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { YTVideoDetail } from "@/custom-types";
 
 const formSchema = z.object({
   url: z.string().url(),
@@ -35,9 +37,10 @@ export default function LinkForm() {
     },
   });
 
+  const [fetched, setIsFetched] = useState(false);
   const router = useRouter();
 
-  const { setVideoDetails } = useStore();
+  const { setVideoDetails, videoDetails } = useStore();
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -52,17 +55,29 @@ export default function LinkForm() {
         console.log("Illegal Response(Not Ok) from Server");
         return;
       }
-      const data = (await response.json()) as YTVideoDetail;
-      if (!data.title) {
-        console.log("No title in Response");
-        return;
-      }
-      const title = encodeURIComponent(data.title);
-      setVideoDetails(data);
-      router.push(`/video/${title}`);
+      response
+        .json()
+        .then((data: YTVideoDetail) => {
+          if (!data.title) {
+            console.log("No title in Response");
+            return;
+          }
+          setVideoDetails(data);
+          setIsFetched(true);
+        })
+        .catch((error) => {
+          console.log("Error Parsing Response");
+        });
     } catch (error) {
       console.log("Form Submit Error");
     }
+  }
+
+  if (fetched) {
+    // videoDetails can't be null here, cause if fetched is true,
+    // it means that videoDetails is set
+    router.push(`/video/${encodeURIComponent(videoDetails!.title)}`);
+    return null;
   }
 
   if (form.formState.isSubmitting) {

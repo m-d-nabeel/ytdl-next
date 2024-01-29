@@ -14,50 +14,69 @@ export async function POST(req: Request) {
     if (!ytdl.validateURL(url)) {
       return new NextResponse("Invalid youtube url", { status: 400 });
     }
+
     const info = await ytdl.getBasicInfo(url);
+    const { title: videoTitle } = info.videoDetails;
 
-    const video = ytdl(url, {
-      quality: "highestvideo",
-    });
-    const audio = ytdl(url, {
-      quality: "highestaudio",
-    });
+    const { videoPath, audioPath } = await downloadMedia(url);
 
-    const videoTitle = info.videoDetails.title.replace(/[^a-z0-9]/gi, "_");
-    const videoPath = `/tmp/video/${randomUUID()}.mp4`;
-    const audioPath = `/tmp/video/${randomUUID()}.mp3`;
-    const mixedPath = `/tmp/video/${videoTitle}.mp4`;
+    const mixedPath = `/tmp/downloaded/${videoTitle.replace(
+      /[^a-z0-9]/gi,
+      "_"
+    )}.mp4`;
 
-    const videoPromise = new Promise<void>((resolve, reject) => {
-      video.pipe(fs.createWriteStream(videoPath));
-      video.on("end", () => {
-        console.log("Video finished downloading.");
-        resolve();
-      });
-      video.on("error", (error) => {
-        console.error("Error downloading video:", error);
-        reject(error);
-      });
+    await mergeAudioAndVideo(videoPath, audioPath, mixedPath);
+
+    deleteTimer(mixedPath);
+
+    return NextResponse.json({
+      message: "Download Success",
+      title: `${videoTitle}.mp4`,
+      info,
     });
-    const audioPromise = new Promise<void>((resolve, reject) => {
-      audio.pipe(fs.createWriteStream(audioPath));
-      audio.on("end", () => {
-        console.log("Audio finished downloading.");
-        resolve();
-      });
-      audio.on("error", (error) => {
-        console.error("Error downloading audio:", error);
-        reject(error);
-      });
+  } catch (error) {
+    console.error("Download Server Error:", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
+
+async function downloadMedia(
+  url: string
+): Promise<{ videoPath: string; audioPath: string }> {
+  const videoPath = `/tmp/downloaded/${randomUUID()}.mp4`;
+  const audioPath = `/tmp/downloaded/${randomUUID()}.mp3`;
+
+  const video = ytdl(url, { quality: "highestvideo" });
+  const audio = ytdl(url, { quality: "highestaudio" });
+
+  const downloadVideo = streamToFile(video, videoPath);
+  const downloadAudio = streamToFile(audio, audioPath);
+
+  await Promise.all([downloadVideo, downloadAudio]);
+
+  return { videoPath, audioPath };
+}
+
+function streamToFile(stream: any, filePath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    stream.pipe(fs.createWriteStream(filePath));
+    stream.on("end", () => {
+      console.log(`${filePath.split("/").pop()} finished downloading.`);
+      resolve();
     });
-    try {
-      await Promise.all([videoPromise, audioPromise]);
-      console.log("Both audio and video downloaded successfully.");
-    } catch (error) {
-      console.error("Error downloading audio and video:", error);
-      return new NextResponse("Download Failed in server", { status: 500 });
-    }
-    
+    stream.on("error", (error: any) => {
+      console.error(`Error downloading ${filePath.split("/").pop()}:`, error);
+      reject(error);
+    });
+  });
+}
+
+async function mergeAudioAndVideo(
+  videoPath: string,
+  audioPath: string,
+  mixedPath: string
+): Promise<void> {
+  return new Promise((resolve, reject) => {
     Ffmpeg.setFfmpegPath("/usr/bin/ffmpeg");
     Ffmpeg()
       .input(videoPath)
@@ -65,31 +84,27 @@ export async function POST(req: Request) {
       .outputOptions(["-acodec copy", "-vcodec copy"])
       .output(mixedPath)
       .on("end", () => {
-        console.log("Audio and video merged successfully.", mixedPath);
-        fs.rm(audioPath, (error) => {
-          !!error && console.error("Error deleting audio file:", error);
+        console.log("Audio and video merged successfully:", mixedPath);
+        fs.unlink(audioPath, (err) => {
+          if (err) {
+            console.log("Error deleting audio file:");
+            throw err;
+          }
         });
-        fs.rm(videoPath, (error) => {
-          !!error && console.error("Error deleting video file:", error);
+        fs.unlink(videoPath, (err) => {
+          if (err) {
+            console.log("Error deleting video file:");
+            throw err;
+          }
         });
+        resolve();
       })
-      .on("error", (error: any) => {
-        console.error("Error merging audio and video:", error);
-        return new NextResponse("Internal Error", { status: 500 });
+      .on("error", (err) => {
+        console.error("Error merging audio and video:", err);
+        reject(err);
       })
       .run();
-
-    deleteTimer(mixedPath);
-
-    return NextResponse.json({
-      message: "Download Success",
-      title: videoTitle + ".mp4",
-      info,
-    });
-  } catch (error) {
-    console.log("Download Server Error");
-    return new NextResponse("Internal Error", { status: 500 });
-  }
+  });
 }
 
 function deleteTimer(path: string) {

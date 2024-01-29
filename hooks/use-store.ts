@@ -1,3 +1,4 @@
+import { YTVideoDetail } from "@/custom-types";
 import { create } from "zustand";
 
 type Store = {
