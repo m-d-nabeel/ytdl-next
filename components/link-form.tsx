@@ -22,7 +22,7 @@ import {
 import { useStore } from "@/hooks/use-store";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { YTVideoDetail } from "@/custom-types";
+import { YTVideoDetail } from "@/types";
 
 const formSchema = z.object({
   url: z.string().url(),

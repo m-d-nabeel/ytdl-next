@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import ytdl from "ytdl-core";
 import fs from "fs";
 import Ffmpeg from "fluent-ffmpeg";
-import { YTVideoDetail } from "@/custom-types";
+import { YTVideoDetail } from "@/types";
 import { Readable } from "stream";
 
 const QUALITY_MAP: Record<string, string> = {
@@ -10,16 +10,15 @@ const QUALITY_MAP: Record<string, string> = {
   medium: "highest",
   high: "highestaudio_highestvideo",
   audio_only: "highestaudio",
-};
+} as const;
 
 async function downloadFile(
   url: string,
   qualityOption: string,
   title: string
 ): Promise<string> {
-  const downloadPath = `/tmp/downloaded/${title}.mp${
-    qualityOption.includes("audio") ? "3" : "4"
-  }`;
+  const downloadPath = `/tmp/downloaded/${title}.mp${qualityOption.includes("audio") ? "3" : "4"
+    }`;
   const fileStream = ytdl(url, { quality: qualityOption });
   // const writeStream = fs.createWriteStream(downloadPath);
 
