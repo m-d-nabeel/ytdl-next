@@ -4,6 +4,7 @@ import fs from "fs";
 import Ffmpeg from "fluent-ffmpeg";
 import { YTVideoDetail } from "@/types";
 import { Readable } from "stream";
+import path from "path";
 
 const QUALITY_MAP: Record<string, string> = {
   low: "lowest",
@@ -17,31 +18,41 @@ async function downloadFile(
   qualityOption: string,
   title: string
 ): Promise<string> {
-  const downloadPath = `/tmp/downloaded/${title}.mp${qualityOption.includes("audio") ? "3" : "4"
-    }`;
-  const fileStream = ytdl(url, { quality: qualityOption });
+
+  console.log("Downloading file with quality:", qualityOption);
+
+  const isAudio = qualityOption.includes("audio");
+  const filename = isAudio ? `${title}.mp3` : `${title}.mp4`;
+  const downloadPath = path.join("/tmp/downloaded", filename);
+
+  // Get the file stream
   // const writeStream = fs.createWriteStream(downloadPath);
 
-  // await new Promise<void>((resolve, reject) => {
-  //   file.pipe(writeStream);
-  //   file.on("end", resolve);
-  //   file.on("error", reject);
-  // });
+  await new Promise<void>((resolve, reject) => {
+    ytdl(url, { quality: qualityOption })
+      .pipe(fs.createWriteStream(downloadPath))
+      .on("finish", resolve)
+      .on("error", reject)
+      .on("end", resolve)
+  });
 
   console.log(downloadPath);
 
-  await new Promise<void>((resolve, reject) => {
-    Ffmpeg(fileStream)
-      .toFormat("mp3")
-      .saveToFile(downloadPath)
-      .on("error", (err) => {
-        reject(err);
-      })
-      .on("end", () => {
-        console.log("Finished merging!");
-        resolve();
-      });
-  });
+  // const fileStream = ytdl(url, { quality: qualityOption });
+
+  // await new Promise<void>((resolve, reject) => {
+  //   Ffmpeg(fileStream)
+  //     .toFormat("mp3")
+  //     .saveToFile(downloadPath)
+  //     .on("error", (err) => {
+  //       console.error("Error downloading file:", err);
+  //       reject();
+  //     })
+  //     .on("end", () => {
+  //       console.log("Finished merging!");
+  //       resolve();
+  //     });
+  // });
   return downloadPath;
 }
 
@@ -77,12 +88,11 @@ async function mergeAudioVideo(
 
 export async function GET(
   req: Request,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: { url: string } }
 ) {
   try {
-    const { slug } = params;
-    const url = slug[0];
-    if (!url) return new NextResponse("Missing URL", { status: 400 });
+    const { url } = params;
+    if (!url) { return new NextResponse("Missing URL", { status: 400 }); }
 
     if (!ytdl.validateURL(url))
       return new NextResponse("Invalid YouTube URL", { status: 400 });
@@ -110,33 +120,36 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { slug: string[] } }
+  { params }: { params: { url: string } }
 ) {
   try {
-    const { slug } = params;
-    const url = slug[0];
-    if (!url) return new NextResponse("Missing URL", { status: 400 });
+    const { url } = params;
+    if (!url) {
+      return new NextResponse("Missing URL", { status: 400 });
+    }
 
-    if (!ytdl.validateURL(url))
+    if (!ytdl.validateURL(url)) {
       return new NextResponse("Invalid YouTube URL", { status: 400 });
+    }
 
     const { quality } = await req.json();
     const qualityOption = QUALITY_MAP[quality.toLowerCase()];
-    if (!qualityOption)
+
+    if (!qualityOption) {
       return new NextResponse("Invalid Quality", { status: 400 });
+    }
 
     const info = await ytdl.getBasicInfo(url);
     let title = info.videoDetails.title.replace(/[^a-z0-9]/gi, "_");
-    fs.mkdir(
-      "/tmp/downloaded",
-      {
-        recursive: true,
-      },
-      (err) => {
-        console.log("FOLDER CREATION FAILED");
-        throw err;
-      }
-    );
+
+    // Create a directory to store downloaded files
+    if (!fs.existsSync("/tmp/downloaded")) {
+      fs.mkdirSync("/tmp/downloaded", { recursive: true });
+      console.log("Directory created successfully.");
+    } else {
+      console.log("Directory already exists.");
+    }
+
     let downloadPath: string;
     if (qualityOption === "highestaudio_highestvideo") {
       const audioPath = await downloadFile(url, "highestaudio", title);
