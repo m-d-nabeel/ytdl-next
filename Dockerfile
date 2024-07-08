@@ -22,7 +22,7 @@ FROM node:lts-alpine AS runner
 WORKDIR /app
 
 # Set environment to production
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Create a system user and group for running the app
 RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
