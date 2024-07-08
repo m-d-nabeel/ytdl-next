@@ -18,5 +18,5 @@ jobs:
     - name: Delete the existing Docker container
       run: sudo docker rm -f ytdl-next || true
     - name: Run the Docker container
-      run: sudo docker run -d --name ytdl-next -p 8080:3000 mdnabeel/ytdl-next
-      
+      run: sudo docker run -d --name ytdl-next -p 3000:3000 mdnabeel/ytdl-next
+
