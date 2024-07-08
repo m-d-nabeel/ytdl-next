@@ -1,0 +1,21 @@
+name: Docker Image CD
+
+on:
+  workflow_run:
+    workflows: ["Docker Image CI"]
+    types:
+      - completed
+
+jobs:
+
+  build:
+
+    runs-on: self-hosted
+
+    steps:
+    - name: Pull Docker image from Docker Hub
+      run: sudo docker pull mdnabeel/ytdl-next:latest
+    - name: Delete the existing Docker container
+      run: sudo docker rm -f ytdl-next || true
+    - name: Run the Docker container
+      run: sudo docker run -d --name ytdl-next -p 8080:3000 mdnabeel/ytdl-next
