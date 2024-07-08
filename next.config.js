@@ -16,4 +16,7 @@ const nextConfig = {
   crossOrigin: "anonymous",
 };
 
-module.exports = nextConfig;
+module.exports = {
+  ...nextConfig,
+  output: "standalone",
+};
