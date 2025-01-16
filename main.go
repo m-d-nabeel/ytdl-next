@@ -5,11 +5,22 @@ import (
 	"log"
 )
 
-type API struct{}
+type API struct {
+	CachedData map[string]YTMediaInfo
+}
 
 func main() {
 	tempUrl := "https://www.youtube.com/shorts/l_4OinnwnS4"
-	a := API{}
+	cache := Cache{
+		Path: "./.cache",
+		Data: make(map[string]YTMediaInfo),
+	}
+	cache.loadCache()
+	a := API{
+		CachedData: make(map[string]YTMediaInfo),
+	}
+	a.CachedData = cache.Data
+	defer cache.saveCache()
 	details, err := a.getYTMediaInfo(tempUrl)
 	printMediaDetails(details)
 	if err != nil {
@@ -34,5 +45,4 @@ func printMediaDetails(details YTMediaInfo) {
 				format.FormatID, format.Resolution, format.Ext, format.Filesize, format.Note)
 		}
 	}
-
 }

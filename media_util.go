@@ -6,7 +6,14 @@ import (
 )
 
 func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
-	cmd := a.GetYTMediaCmd()
+	details, ok := a.CachedData[mediaUrl]
+	if ok {
+		log.Println("Cache Hit")
+		return details, nil
+	}
+
+	log.Println("Cache Miss")
+	cmd := a.GetYTMediaInfoCmd()
 	cmd.Args = append(cmd.Args, mediaUrl)
 
 	output, err := cmd.CombinedOutput()
@@ -14,11 +21,11 @@ func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
 		log.Fatalf("Error running yt-dlp: %v", err)
 	}
 
-	var details YTMediaInfo
 	err = json.Unmarshal(output, &details)
 	if err != nil {
 		log.Fatalf("Error parsing JSON output: %v", err)
 	}
 
+	a.CachedData[mediaUrl] = details
 	return details, nil
 }
