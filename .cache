@@ -4,51 +4,9 @@
     "title": "High fashion Avatar: The Last Airbender",
     "duration": 55,
     "uploader": "Wisdom Kaye",
-    "view_count": 1554731,
-    "like_count": 314904,
+    "view_count": 1570361,
+    "like_count": 316974,
     "formats": [
-      {
-        "format_id": "sb2",
-        "resolution": "25x45",
-        "ext": "mhtml",
-        "filesize": 0,
-        "format_note": "storyboard"
-      },
-      {
-        "format_id": "sb3",
-        "resolution": "48x27",
-        "ext": "mhtml",
-        "filesize": 0,
-        "format_note": "storyboard"
-      },
-      {
-        "format_id": "sb1",
-        "resolution": "50x90",
-        "ext": "mhtml",
-        "filesize": 0,
-        "format_note": "storyboard"
-      },
-      {
-        "format_id": "sb0",
-        "resolution": "101x180",
-        "ext": "mhtml",
-        "filesize": 0,
-        "format_note": "storyboard"
-      },
-      {
-        "format_id": "233",
-        "resolution": "audio only",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": "Default"
-      },
-      {
-        "format_id": "234",
-        "resolution": "audio only",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": "Default"
-      },
       {
         "format_id": "249-drc",
         "resolution": "audio only",
@@ -106,20 +64,6 @@
         "format_note": "medium"
       },
       {
-        "format_id": "602",
-        "resolution": "144x256",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
-        "format_id": "269",
-        "resolution": "144x256",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "160",
         "resolution": "144x256",
         "ext": "mp4",
@@ -134,25 +78,11 @@
         "format_note": "144p"
       },
       {
-        "format_id": "229",
-        "resolution": "240x426",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "133",
         "resolution": "240x426",
         "ext": "mp4",
         "filesize": 885167,
         "format_note": "240p"
-      },
-      {
-        "format_id": "604",
-        "resolution": "240x426",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
       },
       {
         "format_id": "242",
@@ -169,13 +99,6 @@
         "format_note": "240p"
       },
       {
-        "format_id": "230",
-        "resolution": "360x640",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "134",
         "resolution": "360x640",
         "ext": "mp4",
@@ -190,13 +113,6 @@
         "format_note": "360p"
       },
       {
-        "format_id": "605",
-        "resolution": "360x640",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "243",
         "resolution": "360x640",
         "ext": "webm",
@@ -209,13 +125,6 @@
         "ext": "mp4",
         "filesize": 1366302,
         "format_note": "360p"
-      },
-      {
-        "format_id": "231",
-        "resolution": "480x854",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
       },
       {
         "format_id": "135",
@@ -246,25 +155,11 @@
         "format_note": "480p"
       },
       {
-        "format_id": "232",
-        "resolution": "720x1280",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "136",
         "resolution": "720x1280",
         "ext": "mp4",
         "filesize": 6720496,
         "format_note": "720p"
-      },
-      {
-        "format_id": "609",
-        "resolution": "720x1280",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
       },
       {
         "format_id": "247",
@@ -281,25 +176,11 @@
         "format_note": "720p"
       },
       {
-        "format_id": "270",
-        "resolution": "1080x1920",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
-      },
-      {
         "format_id": "137",
         "resolution": "1080x1920",
         "ext": "mp4",
         "filesize": 13364179,
         "format_note": "1080p"
-      },
-      {
-        "format_id": "614",
-        "resolution": "1080x1920",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": ""
       },
       {
         "format_id": "248",
@@ -314,13 +195,6 @@
         "ext": "mp4",
         "filesize": 5895617,
         "format_note": "1080p"
-      },
-      {
-        "format_id": "616",
-        "resolution": "1080x1920",
-        "ext": "mp4",
-        "filesize": 0,
-        "format_note": "Premium"
       }
     ]
   }

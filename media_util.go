@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 )
 
@@ -18,14 +19,33 @@ func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		return YTMediaInfo{}, fmt.Errorf("failed to run yt-dlp: %w", err)
+	}
+
+	err = a.parseYTMediaInfo(output, &details)
+	if err != nil {
 		log.Fatalf("Error running yt-dlp: %v", err)
 	}
-
-	err = json.Unmarshal(output, &details)
-	if err != nil {
-		log.Fatalf("Error parsing JSON output: %v", err)
-	}
-
 	a.CachedData[mediaUrl] = details
 	return details, nil
+}
+
+func (a *API) parseYTMediaInfo(output []byte, details *YTMediaInfo) error {
+	if err := json.Unmarshal(output, &details); err != nil {
+		return fmt.Errorf("failed to unmarshal JSON: %w", err)
+	}
+
+	if details.ID == "" {
+		return fmt.Errorf("missing required field: ID")
+	}
+
+	validFormats := make([]YTFormat, 0, len(details.Formats))
+	for _, format := range details.Formats {
+		if format.Filesize > 0 {
+			validFormats = append(validFormats, format)
+		}
+	}
+
+	details.Formats = validFormats
+	return nil
 }
