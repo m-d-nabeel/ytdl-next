@@ -1,12 +1,14 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
-func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
+func (a *API) getYTMediaInfo(mediaUrl string) (types.YTMediaInfo, error) {
 	details, ok := a.CachedData[mediaUrl]
 	if ok {
 		log.Println("Cache Hit")
@@ -14,15 +16,15 @@ func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
 	}
 
 	log.Println("Cache Miss")
-	cmd := a.GetYTMediaInfoCmd()
+	cmd := GetYTMediaInfoCmd()
 	cmd.Args = append(cmd.Args, mediaUrl)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return YTMediaInfo{}, fmt.Errorf("failed to run yt-dlp: %w", err)
+		return types.YTMediaInfo{}, fmt.Errorf("failed to run yt-dlp: %w", err)
 	}
 
-	err = a.parseYTMediaInfo(output, &details)
+	err = parseYTMediaInfo(output, &details)
 	if err != nil {
 		log.Fatalf("Error running yt-dlp: %v", err)
 	}
@@ -30,7 +32,7 @@ func (a *API) getYTMediaInfo(mediaUrl string) (YTMediaInfo, error) {
 	return details, nil
 }
 
-func (a *API) parseYTMediaInfo(output []byte, details *YTMediaInfo) error {
+func parseYTMediaInfo(output []byte, details *types.YTMediaInfo) error {
 	if err := json.Unmarshal(output, &details); err != nil {
 		return fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
@@ -39,7 +41,7 @@ func (a *API) parseYTMediaInfo(output []byte, details *YTMediaInfo) error {
 		return fmt.Errorf("missing required field: ID")
 	}
 
-	validFormats := make([]YTFormat, 0, len(details.Formats))
+	validFormats := make([]types.YTFormat, 0, len(details.Formats))
 	for _, format := range details.Formats {
 		if format.Filesize > 0 {
 			validFormats = append(validFormats, format)

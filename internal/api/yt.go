@@ -1,34 +1,16 @@
-package main
+package api
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
 type API struct {
-	CachedData map[string]YTMediaInfo
+	CachedData map[string]types.YTMediaInfo
 }
 
-func main() {
-	tempUrl := "https://www.youtube.com/shorts/l_4OinnwnS4"
-	cache := Cache{
-		Path: "./.cache",
-		Data: make(map[string]YTMediaInfo),
-	}
-	cache.loadCache()
-	a := API{
-		CachedData: make(map[string]YTMediaInfo),
-	}
-	a.CachedData = cache.Data
-	defer cache.saveCache()
-	details, err := a.getYTMediaInfo(tempUrl)
-	printMediaDetails(details)
-	if err != nil {
-		log.Fatalf("ERROR: %v", err.Error())
-	}
-}
-
-func printMediaDetails(details YTMediaInfo) {
+func printMediaDetails(details types.YTMediaInfo) {
 	// Print general media details
 	fmt.Printf("media ID: %s\n", details.ID)
 	fmt.Printf("Title: %s\n", details.Title)

@@ -1,19 +1,21 @@
-package main
+package cache
 
 import (
 	"encoding/json"
 	"log"
 	"os"
+
+	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
 type Cache struct {
 	Path string
-	Data map[string]YTMediaInfo
+	Data map[string]types.YTMediaInfo
 }
 
-func (c *Cache) loadCache() error {
+func (c *Cache) LoadCache() error {
 	if c.Data == nil {
-		c.Data = make(map[string]YTMediaInfo)
+		c.Data = make(map[string]types.YTMediaInfo)
 	}
 
 	file, err := os.Open(c.Path)
@@ -39,7 +41,7 @@ func (c *Cache) loadCache() error {
 	return err
 }
 
-func (c *Cache) saveCache() error {
+func (c *Cache) SaveCache() error {
 	file, err := os.Create(c.Path)
 	if err != nil {
 		return err
