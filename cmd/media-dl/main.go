@@ -15,7 +15,6 @@ func main() {
 		Data: make(map[string]types.YTMediaInfo),
 	}
 	cache.LoadCache()
-	// tempUrl := "https://www.youtube.com/shorts/l_4OinnwnS4"
 	api := api.API{
 		CachedData: make(map[string]types.YTMediaInfo),
 	}
@@ -28,9 +27,10 @@ func main() {
 		}
 	}()
 
-	srv := server.NewServer(server.DefaultConfig(), &api)
+	srv := server.NewServer(&api)
+
 	err := srv.Start()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error:", err)
 	}
 }

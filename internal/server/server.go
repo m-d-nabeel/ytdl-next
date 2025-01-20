@@ -1,194 +1,91 @@
 package server
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/m-d-nabeel/ytdl-web/internal/api"
 )
 
-// ServerConfig holds all server configuration options
-type ServerConfig struct {
-	Port            string
-	MediaDirectory  string
-	StaticDirectory string
-	ChunkSize       int64
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	MaxHeaderBytes  int
-	CertFile        string
-	KeyFile         string
+type DownloadResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error,omitempty"`
+	URL    string `json:"url,omitempty"`
 }
 
-// DefaultConfig returns a ServerConfig with sensible defaults
-func DefaultConfig() *ServerConfig {
-	return &ServerConfig{
-		Port:            ":8080",
-		MediaDirectory:  "./media",
-		StaticDirectory: "./static",
-		ChunkSize:       1024 * 1024, // 1MB
-		ReadTimeout:     15 * time.Second,
-		WriteTimeout:    15 * time.Second,
-		MaxHeaderBytes:  1 << 20, // 1MB
-	}
-}
-
-// Server represents our HTTP server
 type Server struct {
-	config     *ServerConfig
 	httpServer *http.Server
 	router     *http.ServeMux
 	wg         sync.WaitGroup
 	api        *api.API
+	port       string
 }
 
 // NewServer creates a new server instance with the given config
-func NewServer(config *ServerConfig, api *api.API) *Server {
-	if config == nil {
-		config = DefaultConfig()
-	}
-
+func NewServer(api *api.API) *Server {
 	s := &Server{
-		config: config,
 		router: http.NewServeMux(),
 		api:    api,
+		port:   ":8080",
 	}
 
 	s.setupRoutes()
 	return s
 }
 
-// setupRoutes initializes all server routes
-func (s *Server) setupRoutes() {
-	// Health check
-	s.router.HandleFunc("/health", s.handleHealth())
-
-	// Media streaming
-	s.router.HandleFunc("/stream/", s.handleStreamMedia())
-
-	// Static files
-	s.router.Handle("/static/",
-		http.StripPrefix("/static/",
-			s.cacheMiddleware(
-				http.FileServer(http.Dir(s.config.StaticDirectory)))))
-}
-
 // Start initializes and starts the server
 func (s *Server) Start() error {
-	// Create required directories
-	if err := s.createDirectories(); err != nil {
-		return fmt.Errorf("failed to create directories: %w", err)
-	}
+	// Serve static files from the public directory
+	http.Handle("/", http.FileServer(http.Dir("public")))
 
-	s.httpServer = &http.Server{
-		Addr:           s.config.Port,
-		Handler:        s.router,
-		ReadTimeout:    s.config.ReadTimeout,
-		WriteTimeout:   s.config.WriteTimeout,
-		MaxHeaderBytes: s.config.MaxHeaderBytes,
-	}
+	// API endpoints
+	http.HandleFunc("/api/download", s.handleDownload)
 
-	// Start server in a goroutine
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		var err error
-		if s.config.CertFile != "" && s.config.KeyFile != "" {
-			err = s.httpServer.ListenAndServeTLS(s.config.CertFile, s.config.KeyFile)
-		} else {
-			err = s.httpServer.ListenAndServe()
-		}
-		if err != http.ErrServerClosed {
-			log.Printf("Server error: %v", err)
-		}
-	}()
-
-	log.Printf("Server starting on port %s...", s.config.Port)
-	return nil
+	log.Printf("Server starting on port %s...", s.port)
+	return http.ListenAndServe(s.port, nil)
 }
 
-// Stop gracefully shuts down the server
-func (s *Server) Stop(ctx context.Context) error {
-	if err := s.httpServer.Shutdown(ctx); err != nil {
-		return fmt.Errorf("server shutdown failed: %w", err)
+func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
 	}
-	s.wg.Wait()
-	return nil
-}
 
-// createDirectories ensures required directories exist
-func (s *Server) createDirectories() error {
-	dirs := []string{s.config.MediaDirectory, s.config.StaticDirectory}
-	for _, dir := range dirs {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return err
-		}
+	var requestData struct {
+		URL string `json:"url"`
 	}
-	return nil
-}
 
-// handleHealth returns a health check handler
-func (s *Server) handleHealth() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Server is healthy")
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
-}
 
-// handleStreamMedia returns a media streaming handler
-func (s *Server) handleStreamMedia() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		filename := filepath.Base(r.URL.Path)
-		path := filepath.Join(s.config.MediaDirectory, filename)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Transfer-Encoding", "chunked")
 
-		file, err := os.Open(path)
-		if err != nil {
-			http.Error(w, "File not found", http.StatusNotFound)
-			return
-		}
-		defer file.Close()
+	cmd := exec.Command("yt-dlp", "-o", "-", requestData.URL)
+	cmd.Stdout = w
 
-		stat, err := file.Stat()
-		if err != nil {
-			http.Error(w, "Failed to get file info", http.StatusInternalServerError)
-			return
-		}
-
-		// Stream the file in chunks
-		w.Header().Set("Content-Type", s.getContentType(filename))
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", stat.Size()))
-
-		buf := make([]byte, s.config.ChunkSize)
-		for {
-			n, err := file.Read(buf)
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				log.Printf("Error reading file: %v", err)
-				return
-			}
-			if _, err := w.Write(buf[:n]); err != nil {
-				log.Printf("Error writing response: %v", err)
-				return
-			}
-		}
+	if err := cmd.Start(); err != nil {
+		json.NewEncoder(w).Encode(DownloadResponse{
+			Status: "error",
+			Error:  fmt.Sprintf("Failed to start download: %v", err),
+		})
+		return
 	}
-}
 
-// cacheMiddleware adds caching headers to static files
-func (s *Server) cacheMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Cache-Control", "public, max-age=31536000")
-		next.ServeHTTP(w, r)
-	})
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	if err := cmd.Wait(); err != nil {
+		log.Printf("Download error: %v", err)
+	}
 }
 
 // getContentType determines the content type based on file extension
