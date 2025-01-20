@@ -8,8 +8,9 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/health", s.handleHealth())
 
 	// Serve static files from the public directory
-	http.Handle("/", http.FileServer(http.Dir("static")))
+	http.Handle("/", http.FileServer(http.Dir("website/dist")))
 
 	// API endpoints
-	http.HandleFunc("/api/download", s.handleDownload)
+	http.HandleFunc("/api/yt/download", s.handleYTDownload)
+	http.HandleFunc("/api/yt/info", s.handleYTInfo)
 }

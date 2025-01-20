@@ -3,11 +3,22 @@ package api
 import (
 	"fmt"
 
+	"github.com/m-d-nabeel/ytdl-web/internal/cache"
 	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
 type API struct {
-	CachedData map[string]types.YTMediaInfo
+	Cache *cache.Cache
+}
+
+func NewAPI(path string) *API {
+	api := &API{
+		Cache: &cache.Cache{
+			Path: path,
+		},
+	}
+	api.Cache.LoadCache()
+	return api
 }
 
 func printMediaDetails(details types.YTMediaInfo) {

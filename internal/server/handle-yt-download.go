@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
-	mediaURL := r.URL.Query().Get("url")
-	if mediaURL == "" {
+func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
+	mediaUrl := r.URL.Query().Get("url")
+	if mediaUrl == "" {
 		http.Error(w, "URL parameter is required", http.StatusBadRequest)
 		return
 	}
 
 	// Get video info first
-	filename, err := s.getFilename(mediaURL)
+	filename, err := s.getFilename(mediaUrl)
 	if err != nil {
 		http.Error(w, "Failed to get video info", http.StatusInternalServerError)
 		return
@@ -31,7 +31,7 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("yt-dlp",
 		"-o", "-", // Output to stdout
 		"--newline", // Force progress to new lines
-		mediaURL)
+		mediaUrl)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

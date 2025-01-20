@@ -8,8 +8,9 @@ import (
 	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
-func (a *API) getYTMediaInfo(mediaUrl string) (types.YTMediaInfo, error) {
-	details, ok := a.CachedData[mediaUrl]
+func (a *API) GetYTMediaInfo(mediaUrl string) (types.YTMediaInfo, error) {
+	details, ok := a.Cache.Data[mediaUrl]
+
 	if ok {
 		log.Println("Cache Hit")
 		return details, nil
@@ -28,7 +29,7 @@ func (a *API) getYTMediaInfo(mediaUrl string) (types.YTMediaInfo, error) {
 	if err != nil {
 		log.Fatalf("Error running yt-dlp: %v", err)
 	}
-	a.CachedData[mediaUrl] = details
+	a.Cache.Data[mediaUrl] = details
 	return details, nil
 }
 

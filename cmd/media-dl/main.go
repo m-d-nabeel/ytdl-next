@@ -4,33 +4,22 @@ import (
 	"log"
 
 	"github.com/m-d-nabeel/ytdl-web/internal/api"
-	"github.com/m-d-nabeel/ytdl-web/internal/cache"
 	"github.com/m-d-nabeel/ytdl-web/internal/server"
-	"github.com/m-d-nabeel/ytdl-web/internal/types"
 )
 
 func main() {
-	cache := cache.Cache{
-		Path: "./.cache",
-		Data: make(map[string]types.YTMediaInfo),
-	}
-	cache.LoadCache()
-	api := api.API{
-		CachedData: make(map[string]types.YTMediaInfo),
-	}
-	api.CachedData = cache.Data
+	api := api.NewAPI(".cache")
 	defer func() {
-		cache.Data = api.CachedData
-		err := cache.SaveCache()
+		err := api.Cache.SaveCache()
 		if err != nil {
 			log.Println("Error saving cache")
 		}
 	}()
 
-	srv := server.NewServer(&api)
+	srv := server.NewServer(api)
 
 	err := srv.Start()
 	if err != nil {
-		log.Fatal("Error:", err)
+		log.Println(err.Error())
 	}
 }
