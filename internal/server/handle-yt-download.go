@@ -1,94 +1,75 @@
 package server
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"os/exec"
 	"strings"
+
+	"github.com/m-d-nabeel/ytdl-web/internal/api"
 )
 
 func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	mediaUrl := r.URL.Query().Get("url")
-	if mediaUrl == "" {
-		http.Error(w, "URL parameter is required", http.StatusBadRequest)
+	formatID := r.URL.Query().Get("format_id")
+	if mediaUrl == "" || formatID == "" {
+		http.Error(w, "URL and formatID parameter is required", http.StatusBadRequest)
 		return
 	}
 
-	// Get video info first
-	filename, err := s.getFilename(mediaUrl)
-	if err != nil {
-		http.Error(w, "Failed to get video info", http.StatusInternalServerError)
+	mediaInfo, ok := s.api.Cache.Data[mediaUrl]
+	if !ok {
+		http.Error(w, "Please fetch video information before downloading", http.StatusBadRequest)
 		return
 	}
-	// Set headers for streaming download
+
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.mp4"`, sanitizeString(mediaInfo.Title)))
+	w.Header().Set("Transfer-Encoding", "chunked")
 
-	// Create the download command
-	cmd := exec.Command("yt-dlp",
-		"-o", "-", // Output to stdout
-		"--newline", // Force progress to new lines
-		mediaUrl)
+	cmd := api.GetMediaByFormatID(mediaUrl, formatID)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		http.Error(w, "Failed to create pipe", http.StatusInternalServerError)
+		http.Error(w, "Failed to create stdout pipe", http.StatusInternalServerError)
 		return
 	}
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		http.Error(w, "Failed to create error pipe", http.StatusInternalServerError)
-		return
-	}
+	defer stdout.Close()
 
 	if err = cmd.Start(); err != nil {
-		http.Error(w, "Failed to start download", http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to start download: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Monitor progress in a goroutine
-	go func() {
-		scanner := bufio.NewScanner(stderr)
-		for scanner.Scan() {
-			log.Printf("Progress: %s", scanner.Text())
-		}
-	}()
-
-	// Stream the download directly to the client
-	_, err = io.Copy(w, stdout)
+	written, err := io.Copy(w, stdout)
 	if err != nil {
-		log.Printf("Error streaming: %v", err)
+		log.Printf("Error streaming download: %v", err)
 		return
 	}
 
 	if err := cmd.Wait(); err != nil {
 		log.Printf("Command error: %v", err)
+		return
 	}
+
+	log.Printf("Successfully downloaded %s (%d bytes)", mediaInfo.Title, written)
 }
 
-func (s *Server) getFilename(url string) (string, error) {
-	cmd := exec.Command("yt-dlp",
-		"--get-filename",
-		"-o", "%(title)s.%(ext)s",
-		url)
-
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-
-	filename := strings.TrimSpace(string(output))
-	// Sanitize filename
-	filename = strings.Map(func(r rune) rune {
-		if strings.ContainsRune(`<>:"/\|?*`, r) {
-			return '-'
+func sanitizeString(s string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') ||
+			(r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') ||
+			r == '-' || r == '_' ||
+			r == ' ' {
+			return r
 		}
-		return r
-	}, filename)
-
-	return filename, nil
+		return '-'
+	}, s)
 }
