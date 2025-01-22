@@ -20,7 +20,6 @@ func GetVideoInfoCmd(url string) *exec.Cmd {
 		"-j",
 		"--write-thumbnail",
 		"--skip-download",
-		"--extractor-args", "youtube:player_client=web", // Faster extraction
 	}, baseArgs...)
 
 	return exec.Command("yt-dlp", append(args, url)...)
