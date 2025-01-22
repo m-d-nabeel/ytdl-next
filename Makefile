@@ -12,3 +12,6 @@ build-server:
 
 run:
 	./media-dl
+
+run-debug:
+	cd website && npm run dev &	go run cmd/media-dl/main.go

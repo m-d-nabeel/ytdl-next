@@ -1,51 +1,26 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronDown,
-  Eye,
-  ThumbsUp,
   Clock,
-  Video,
-  Music,
-  X,
   Download,
+  Eye,
+  Music,
+  ThumbsUp,
+  Video,
+  X,
 } from "lucide-react";
-import AudioSelector from "./AudioSelector";
-
-interface Format {
-  format_id: string;
-  resolution: string;
-  ext: string;
-  filesize: number;
-  format_note: string;
-  acodec: string;
-  vcodec: string;
-}
-
-interface VideoData {
-  id: string;
-  title: string;
-  duration: number;
-  uploader: string;
-  view_count: number;
-  like_count: number;
-  formats: Format[];
-}
-
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return (
-    Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-  );
-};
+import { useState } from "react";
+import { AudioSelector } from "./AudioSelector";
+import { Format, formatFileSize, VideoData } from "./util";
 
 const getCodecInfo = (format: Format) => {
-  const hasVideo = format.vcodec !== "none";
+  const hasVideo = format.vcodec && format.vcodec !== "none";
   const hasAudio = format.acodec !== "none";
   return { hasVideo, hasAudio };
+};
+
+const isYouTubeUrl = (url: string) => {
+  return url.match(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/);
 };
 
 const CodecIndicator = ({ format }: { format: Format }) => {
@@ -77,24 +52,36 @@ const CodecIndicator = ({ format }: { format: Format }) => {
   );
 };
 
-export default function MediaDownloader() {
+export default function App() {
   const [expanded, setExpanded] = useState(false);
   const [mediaUrl, setMediaUrl] = useState("");
   const [status, setStatus] = useState("");
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAudioSelector, setShowAudioSelector] = useState(false);
-  const [selectedVideoFormat, setSelectedVideoFormat] = useState<Format | null>(
-    null
-  );
+  const [selectedVideoFormatId, setSelectedVideoFormatId] =
+    useState<string>("");
+  const [error, setError] = useState<string>("");
+
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMediaUrl(e.target.value);
+    setError("");
+    setStatus("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mediaUrl.trim()) return;
 
+    if (!isYouTubeUrl(mediaUrl)) {
+      setError("Please enter a valid YouTube URL");
+      return;
+    }
+
     setStatus("Fetching video information...");
     setIsLoading(true);
     setVideoData(null);
+    setError("");
 
     try {
       const response = await fetch(
@@ -106,9 +93,8 @@ export default function MediaDownloader() {
       setVideoData(data);
       setStatus("Select a quality to download:");
     } catch (error) {
-      setStatus(
-        `Error: ${
-          error instanceof Error ? error.message : "An unknown error occurred"
+      setError(
+        `Error: ${error instanceof Error ? error.message : "An unknown error occurred"
         }`
       );
     } finally {
@@ -121,7 +107,7 @@ export default function MediaDownloader() {
 
     const { hasAudio } = getCodecInfo(format);
     if (!hasAudio) {
-      setSelectedVideoFormat(format);
+      setSelectedVideoFormatId(format.format_id);
       setShowAudioSelector(true);
     } else {
       startDownload(format.format_id);
@@ -131,18 +117,18 @@ export default function MediaDownloader() {
   const startDownload = (formatId: string, audioFormatId?: string) => {
     if (!videoData) return;
 
-    let downloadUrl = `/api/yt/download?format_id=${formatId}&url=${encodeURIComponent(
-      mediaUrl
-    )}`;
+    let finalFormatId = formatId;
     if (audioFormatId) {
-      downloadUrl += `&audio_format_id=${audioFormatId}`;
+      finalFormatId = `${audioFormatId}+${formatId}`;
     }
+
+    const encodedFormatId = encodeURIComponent(finalFormatId);
+    const encodedUrl = encodeURIComponent(mediaUrl);
+    const downloadUrl = `/api/yt/download?format_id=${encodedFormatId}&url=${encodedUrl}`;
 
     const link = document.createElement("a");
     link.href = downloadUrl;
-    link.download = `${videoData.title || "video"}.${
-      videoData.formats.find((f) => f.format_id === formatId)?.ext || "mp4"
-    }`;
+    link.download = `${videoData.title || "video"}.mp4`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -159,14 +145,13 @@ export default function MediaDownloader() {
         transition={{ duration: 0.5 }}
         className="bg-white rounded-lg shadow-2xl overflow-hidden w-full max-w-2xl"
       >
-        {/* URL Input Form */}
         <form onSubmit={handleSubmit} className="p-6">
           <div className="flex gap-4">
             <input
               type="url"
               value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="Enter media URL"
+              onChange={handleUrlChange}
+              placeholder="Enter YouTube URL"
               className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
               required
             />
@@ -180,7 +165,8 @@ export default function MediaDownloader() {
               {isLoading ? "Loading..." : "Fetch"}
             </motion.button>
           </div>
-          {status && <p className="mt-2 text-gray-600">{status}</p>}
+          {error && <p className="mt-2 text-red-500">{error}</p>}
+          {status && !error && <p className="mt-2 text-gray-600">{status}</p>}
         </form>
 
         <AnimatePresence>
@@ -192,22 +178,23 @@ export default function MediaDownloader() {
               transition={{ duration: 0.3 }}
             >
               <div className="p-6 pt-0">
-                <h2 className="text-3xl font-bold mb-4 text-gray-800">
+                <h2 className="text-2xl font-bold mb-4 text-gray-800 break-words">
                   {videoData.title}
                 </h2>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                   <p className="text-gray-600">{videoData.uploader}</p>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-wrap items-center gap-4">
                     <span className="flex items-center text-gray-600">
-                      <Eye className="w-4 h-4 mr-1" />{" "}
+                      <Eye className="w-4 h-4 mr-1" />
                       {videoData.view_count.toLocaleString()}
                     </span>
                     <span className="flex items-center text-gray-600">
-                      <ThumbsUp className="w-4 h-4 mr-1" />{" "}
+                      <ThumbsUp className="w-4 h-4 mr-1" />
                       {videoData.like_count.toLocaleString()}
                     </span>
                     <span className="flex items-center text-gray-600">
-                      <Clock className="w-4 h-4 mr-1" /> {videoData.duration}s
+                      <Clock className="w-4 h-4 mr-1" />
+                      {videoData.duration}s
                     </span>
                   </div>
                 </div>
@@ -254,15 +241,6 @@ export default function MediaDownloader() {
                               {format.resolution} • {format.ext.toUpperCase()} •{" "}
                               {formatFileSize(format.filesize)}
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {format.vcodec !== "none" &&
-                                `Video: ${format.vcodec}`}
-                              {format.vcodec !== "none" &&
-                                format.acodec !== "none" &&
-                                " • "}
-                              {format.acodec !== "none" &&
-                                `Audio: ${format.acodec}`}
-                            </p>
                           </div>
                           <motion.button
                             onClick={() => handleDownload(format)}
@@ -285,31 +263,30 @@ export default function MediaDownloader() {
                 whileHover={{ backgroundColor: "#e5e7eb" }}
               >
                 <ChevronDown
-                  className={`w-5 h-5 mr-2 transform transition-transform ${
-                    expanded ? "rotate-180" : ""
-                  }`}
+                  className={`w-5 h-5 mr-2 transform transition-transform ${expanded ? "rotate-180" : ""
+                    }`}
                 />
                 {expanded ? "Hide Formats" : "Show Formats"}
               </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.div>
 
-      <AudioSelector
-        isOpen={showAudioSelector}
-        onClose={() => setShowAudioSelector(false)}
-        onSelectAudio={(audioFormatId) => {
-          if (selectedVideoFormat) {
-            startDownload(selectedVideoFormat.format_id, audioFormatId);
+        <AudioSelector
+          isOpen={showAudioSelector}
+          onClose={() => setShowAudioSelector(false)}
+          onSelectAudio={(audioFormatId) => {
+            if (selectedVideoFormatId) {
+              startDownload(selectedVideoFormatId, audioFormatId);
+            }
+          }}
+          audioFormats={
+            videoData?.formats.filter(
+              (f) => f.vcodec == "none" && f.acodec !== "none"
+            ) || []
           }
-        }}
-        audioFormats={
-          videoData?.formats.filter(
-            (f) => f.vcodec === "none" && f.acodec !== "none"
-          ) || []
-        }
-      />
+        />
+      </motion.div>
     </div>
   );
 }

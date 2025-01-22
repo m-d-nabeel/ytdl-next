@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 
 	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
@@ -31,7 +32,22 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := dlapi.GetMediaByFormatID(mediaURL, formatID)
+	log.Println(formatID)
+
+	var cmd *exec.Cmd
+	if strings.Contains(formatID, "+") {
+		formatIDs := strings.Split(formatID, "+")
+		if len(formatIDs) == 2 {
+			audioFormatID := formatIDs[0]
+			videoFormatID := formatIDs[1]
+			cmd = dlapi.GetMediaByFormatIDS(mediaURL, audioFormatID, videoFormatID)
+		} else {
+			http.Error(w, "Invalid media format options", http.StatusBadRequest)
+			return
+		}
+	} else {
+		cmd = dlapi.GetMediaByFormatID(mediaURL, formatID)
+	}
 
 	// Get stdout pipe
 	stdout, err := cmd.StdoutPipe()

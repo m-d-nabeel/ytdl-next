@@ -1,28 +1,52 @@
 package dlapi
 
 import (
+	"fmt"
+	"log"
 	"os/exec"
 )
 
-// GetVideoInfoCmd returns a command to fetch video information with available formats
-func GetVideoInfoCmd(url string) *exec.Cmd {
-	return exec.Command("yt-dlp",
-		"-j",                // Output as JSON
-		"--write-thumbnail", // Get thumbnail URL/info
-		"--skip-download",   // Don't download the video
-		"--no-playlist",     // Don't process playlists
-		url,
-	)
+const outputStdout = "-"
+
+// Define base arguments as a slice instead of a single string
+var baseArgs = []string{
+	"--no-playlist",
+	"--no-warnings",
+	"--no-cookies",
 }
 
-// GetMediaByFormatID returns a command to download media with specific format ID
+func GetVideoInfoCmd(url string) *exec.Cmd {
+	args := append([]string{
+		"-j",
+		"--write-thumbnail",
+		"--skip-download",
+		"--extractor-args", "youtube:player_client=web", // Faster extraction
+	}, baseArgs...)
+
+	return exec.Command("yt-dlp", append(args, url)...)
+}
+
 func GetMediaByFormatID(url, formatID string) *exec.Cmd {
-	return exec.Command("yt-dlp",
+	args := append([]string{
 		"-f", formatID,
-		"-q",                      // Quiet mode
-		"--progress-template", "", // Disable progress output
-		"--no-playlist",
-		"-o", "-", // Output to stdout
-		url,
-	)
+		"--progress-template", "",
+		"--throttled-rate", "100K",
+	}, baseArgs...)
+
+	args = append(args, "-o", outputStdout)
+	return exec.Command("yt-dlp", append(args, url)...)
+}
+
+func GetMediaByFormatIDS(url, audioFormatID, videoFormatID string) *exec.Cmd {
+	log.Printf("FormatID: %v+%v\n", audioFormatID, videoFormatID)
+
+	args := append([]string{
+		"-f", fmt.Sprintf("%v+%v", audioFormatID, videoFormatID),
+		"--concurrent-fragments", "4", // Parallel download
+		"--audio-multistreams", // Allow multiple audio streams
+		"--video-multistreams", // Allow multiple video streams
+	}, baseArgs...)
+
+	args = append(args, "-o", outputStdout)
+	return exec.Command("yt-dlp", append(args, url)...)
 }
