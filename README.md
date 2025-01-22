@@ -1,52 +1,63 @@
-# Media Stream Downloader
+# Media Stream Downloader  
 
-A high-performance media streaming application that leverages yt-dlp for extraction and provides direct browser streaming through a Go backend. Built with a focus on memory efficiency and real-time delivery.
+A high-performance media streaming application that leverages [yt-dlp](https://github.com/yt-dlp/yt-dlp) for media extraction and delivers streams directly to the browser through a Go backend. Designed with a focus on memory efficiency and real-time delivery.  
 
-## Core Features
+## Core Features  
 
-- Direct memory-to-browser streaming without local storage
-- Real-time media extraction and delivery
-- Audio quality selection and format controls
-- React-based web interface with TypeScript
-- Efficient Go backend with concurrent stream handling
+- **Direct Streaming:** Memory-to-browser streaming without intermediate local storage.  
+- **Real-Time Delivery:** Instant media extraction and streaming.  
+- **Flexible Controls:** Audio quality and format selection.  
+- **Modern Frontend:** React-based web interface with TypeScript.  
+- **Efficient Backend:** Concurrent stream handling using Go.  
 
-## Architecture
+## Architecture  
 
-- **Frontend**: React + TypeScript application built with Vite
-- **Backend**: Go server handling media extraction and streaming
-- **Core**: yt-dlp integration for reliable media source extraction
+- **Frontend:** React + TypeScript application built with Vite.  
+- **Backend:** Go server managing media extraction and streaming.  
+- **Core Integration:** Reliable media extraction via [yt-dlp](https://github.com/yt-dlp/yt-dlp).  
 
-## Prerequisites
+## Prerequisites  
 
-- Go 1.x
-- yt-dlp installed and in system PATH
-- JavaScript runtime (Node.js 16+, Deno, or Bun)
+- **Go 1.x** installed.  
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) installed and accessible in the system PATH.  
+- **JavaScript runtime**: Node.js 16+, Deno, or Bun.  
 
-## Quick Start
+## Quick Start  
 
-1. Install yt-dlp
-2. Install frontend dependencies:
-```bash
-cd website
-npm install    # or bun install / yarn
-```
+1. Install `yt-dlp`:  
+   ```bash
+   pip install yt-dlp
+   ```  
 
-3. Build and run:
-```bash
-make build-run
-```
+2. Install frontend dependencies:  
+   ```bash
+   cd website
+   npm install    # or bun install / yarn
+   ```  
 
-Development mode with hot reloading:
-```bash
-make run-debug
-```
+3. Build and run the project:  
+   ```bash
+   make build-run
+   ```  
 
-## System Design
+4. For development with hot reloading:  
+   ```bash
+   make run-debug
+   ```  
 
-```
+## System Design  
+
+```plaintext
 Browser <-> Go Server <-> yt-dlp
    ^          |
    |          v
    └── Streaming Response
-```
+```  
+
+## License  
+
+This project is licensed under the [MIT License](LICENSE).  
+Note: This project uses [yt-dlp](https://github.com/yt-dlp/yt-dlp), which is licensed under the Unlicense/Public Domain (source code) and GNU GPL v3+ (binary/installer).  
+
+For more details, see the [yt-dlp license](https://github.com/yt-dlp/yt-dlp/blob/master/LICENSE).  
 
