@@ -1,118 +1,155 @@
-import { motion, AnimatePresence } from "framer-motion"
-import { useState } from "react"
-import { ChevronDown, Eye, ThumbsUp, Clock, Video, Music, X, Download } from "lucide-react"
-import AudioSelector from "./AudioSelector"
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import {
+  ChevronDown,
+  Eye,
+  ThumbsUp,
+  Clock,
+  Video,
+  Music,
+  X,
+  Download,
+} from "lucide-react";
+import AudioSelector from "./AudioSelector";
 
 interface Format {
-  format_id: string
-  resolution: string
-  ext: string
-  filesize: number
-  format_note: string
-  acodec: string
-  vcodec: string
+  format_id: string;
+  resolution: string;
+  ext: string;
+  filesize: number;
+  format_note: string;
+  acodec: string;
+  vcodec: string;
 }
 
 interface VideoData {
-  id: string
-  title: string
-  duration: number
-  uploader: string
-  view_count: number
-  like_count: number
-  formats: Format[]
+  id: string;
+  title: string;
+  duration: number;
+  uploader: string;
+  view_count: number;
+  like_count: number;
+  formats: Format[];
 }
 
 const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (
+    Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  );
+};
 
 const getCodecInfo = (format: Format) => {
-  const hasVideo = format.vcodec !== "none"
-  const hasAudio = format.acodec !== "none"
-  return { hasVideo, hasAudio }
-}
+  const hasVideo = format.vcodec !== "none";
+  const hasAudio = format.acodec !== "none";
+  return { hasVideo, hasAudio };
+};
 
 const CodecIndicator = ({ format }: { format: Format }) => {
-  const { hasVideo, hasAudio } = getCodecInfo(format)
+  const { hasVideo, hasAudio } = getCodecInfo(format);
 
   return (
     <div className="flex gap-2 items-center text-xs">
-      <div className="flex items-center gap-1" title={`Video: ${hasVideo ? format.vcodec : "No video"}`}>
-        {hasVideo ? <Video className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+      <div
+        className="flex items-center gap-1"
+        title={`Video: ${hasVideo ? format.vcodec : "No video"}`}
+      >
+        {hasVideo ? (
+          <Video className="w-3 h-3 text-green-600" />
+        ) : (
+          <X className="w-3 h-3 text-red-600" />
+        )}
       </div>
-      <div className="flex items-center gap-1" title={`Audio: ${hasAudio ? format.acodec : "No audio"}`}>
-        {hasAudio ? <Music className="w-3 h-3 text-green-600" /> : <X className="w-3 h-3 text-red-600" />}
+      <div
+        className="flex items-center gap-1"
+        title={`Audio: ${hasAudio ? format.acodec : "No audio"}`}
+      >
+        {hasAudio ? (
+          <Music className="w-3 h-3 text-green-600" />
+        ) : (
+          <X className="w-3 h-3 text-red-600" />
+        )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default function MediaDownloader() {
-  const [expanded, setExpanded] = useState(false)
-  const [mediaUrl, setMediaUrl] = useState("")
-  const [status, setStatus] = useState("")
-  const [videoData, setVideoData] = useState<VideoData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showAudioSelector, setShowAudioSelector] = useState(false)
-  const [selectedVideoFormat, setSelectedVideoFormat] = useState<Format | null>(null)
+  const [expanded, setExpanded] = useState(false);
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [status, setStatus] = useState("");
+  const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAudioSelector, setShowAudioSelector] = useState(false);
+  const [selectedVideoFormat, setSelectedVideoFormat] = useState<Format | null>(
+    null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!mediaUrl.trim()) return
+    e.preventDefault();
+    if (!mediaUrl.trim()) return;
 
-    setStatus("Fetching video information...")
-    setIsLoading(true)
-    setVideoData(null)
+    setStatus("Fetching video information...");
+    setIsLoading(true);
+    setVideoData(null);
 
     try {
-      const response = await fetch(`/api/yt/info?url=${encodeURIComponent(mediaUrl)}`)
-      if (!response.ok) throw new Error("Failed to fetch video information")
+      const response = await fetch(
+        `/api/yt/info?url=${encodeURIComponent(mediaUrl)}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch video information");
 
-      const data: VideoData = await response.json()
-      setVideoData(data)
-      setStatus("Select a quality to download:")
+      const data: VideoData = await response.json();
+      setVideoData(data);
+      setStatus("Select a quality to download:");
     } catch (error) {
-      setStatus(`Error: ${error instanceof Error ? error.message : "An unknown error occurred"}`)
+      setStatus(
+        `Error: ${
+          error instanceof Error ? error.message : "An unknown error occurred"
+        }`
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleDownload = (format: Format) => {
-    if (!videoData) return
+    if (!videoData) return;
 
-    const { hasAudio } = getCodecInfo(format)
+    const { hasAudio } = getCodecInfo(format);
     if (!hasAudio) {
-      setSelectedVideoFormat(format)
-      setShowAudioSelector(true)
+      setSelectedVideoFormat(format);
+      setShowAudioSelector(true);
     } else {
-      startDownload(format.format_id)
+      startDownload(format.format_id);
     }
-  }
+  };
 
   const startDownload = (formatId: string, audioFormatId?: string) => {
-    if (!videoData) return
+    if (!videoData) return;
 
-    let downloadUrl = `/api/yt/download?format_id=${formatId}&url=${encodeURIComponent(mediaUrl)}`
+    let downloadUrl = `/api/yt/download?format_id=${formatId}&url=${encodeURIComponent(
+      mediaUrl
+    )}`;
     if (audioFormatId) {
-      downloadUrl += `&audio_format_id=${audioFormatId}`
+      downloadUrl += `&audio_format_id=${audioFormatId}`;
     }
 
-    const link = document.createElement("a")
-    link.href = downloadUrl
-    link.download = `${videoData.title || "video"}.${videoData.formats.find((f) => f.format_id === formatId)?.ext || "mp4"}`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `${videoData.title || "video"}.${
+      videoData.formats.find((f) => f.format_id === formatId)?.ext || "mp4"
+    }`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-    setStatus("Download started. Check your browser downloads.")
-    setShowAudioSelector(false)
-  }
+    setStatus("Download started. Check your browser downloads.");
+    setShowAudioSelector(false);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-700 via-pink-500 to-red-500 flex items-center justify-center p-4">
@@ -155,15 +192,19 @@ export default function MediaDownloader() {
               transition={{ duration: 0.3 }}
             >
               <div className="p-6 pt-0">
-                <h2 className="text-3xl font-bold mb-4 text-gray-800">{videoData.title}</h2>
+                <h2 className="text-3xl font-bold mb-4 text-gray-800">
+                  {videoData.title}
+                </h2>
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-gray-600">{videoData.uploader}</p>
                   <div className="flex items-center space-x-4">
                     <span className="flex items-center text-gray-600">
-                      <Eye className="w-4 h-4 mr-1" /> {videoData.view_count.toLocaleString()}
+                      <Eye className="w-4 h-4 mr-1" />{" "}
+                      {videoData.view_count.toLocaleString()}
                     </span>
                     <span className="flex items-center text-gray-600">
-                      <ThumbsUp className="w-4 h-4 mr-1" /> {videoData.like_count.toLocaleString()}
+                      <ThumbsUp className="w-4 h-4 mr-1" />{" "}
+                      {videoData.like_count.toLocaleString()}
                     </span>
                     <span className="flex items-center text-gray-600">
                       <Clock className="w-4 h-4 mr-1" /> {videoData.duration}s
@@ -189,7 +230,9 @@ export default function MediaDownloader() {
                 className="overflow-hidden bg-gray-100"
               >
                 <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-4">Available Formats</h3>
+                  <h3 className="text-xl font-semibold mb-4">
+                    Available Formats
+                  </h3>
                   <div className="space-y-2">
                     {videoData.formats
                       .filter((format) => format.filesize && format.resolution)
@@ -202,16 +245,23 @@ export default function MediaDownloader() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <p className="font-semibold">{format.format_note}</p>
+                              <p className="font-semibold">
+                                {format.format_note}
+                              </p>
                               <CodecIndicator format={format} />
                             </div>
                             <p className="text-sm text-gray-600">
-                              {format.resolution} • {format.ext.toUpperCase()} • {formatFileSize(format.filesize)}
+                              {format.resolution} • {format.ext.toUpperCase()} •{" "}
+                              {formatFileSize(format.filesize)}
                             </p>
                             <p className="text-xs text-gray-500 mt-1">
-                              {format.vcodec !== "none" && `Video: ${format.vcodec}`}
-                              {format.vcodec !== "none" && format.acodec !== "none" && " • "}
-                              {format.acodec !== "none" && `Audio: ${format.acodec}`}
+                              {format.vcodec !== "none" &&
+                                `Video: ${format.vcodec}`}
+                              {format.vcodec !== "none" &&
+                                format.acodec !== "none" &&
+                                " • "}
+                              {format.acodec !== "none" &&
+                                `Audio: ${format.acodec}`}
                             </p>
                           </div>
                           <motion.button
@@ -235,7 +285,9 @@ export default function MediaDownloader() {
                 whileHover={{ backgroundColor: "#e5e7eb" }}
               >
                 <ChevronDown
-                  className={`w-5 h-5 mr-2 transform transition-transform ${expanded ? "rotate-180" : ""}`}
+                  className={`w-5 h-5 mr-2 transform transition-transform ${
+                    expanded ? "rotate-180" : ""
+                  }`}
                 />
                 {expanded ? "Hide Formats" : "Show Formats"}
               </motion.button>
@@ -249,12 +301,15 @@ export default function MediaDownloader() {
         onClose={() => setShowAudioSelector(false)}
         onSelectAudio={(audioFormatId) => {
           if (selectedVideoFormat) {
-            startDownload(selectedVideoFormat.format_id, audioFormatId)
+            startDownload(selectedVideoFormat.format_id, audioFormatId);
           }
         }}
-        audioFormats={videoData?.formats.filter((f) => f.vcodec === "none" && f.acodec !== "none") || []}
+        audioFormats={
+          videoData?.formats.filter(
+            (f) => f.vcodec === "none" && f.acodec !== "none"
+          ) || []
+        }
       />
     </div>
-  )
+  );
 }
-

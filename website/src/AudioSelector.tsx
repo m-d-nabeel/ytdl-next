@@ -1,30 +1,37 @@
-import { motion, AnimatePresence } from "framer-motion"
-import { Music, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion";
+import { Music, X } from "lucide-react";
 
 interface Format {
-  format_id: string
-  ext: string
-  filesize: number
-  format_note: string
-  acodec: string
+  format_id: string;
+  ext: string;
+  filesize: number;
+  format_note: string;
+  acodec: string;
 }
 
 interface AudioSelectorProps {
-  isOpen: boolean
-  onClose: () => void
-  onSelectAudio: (formatId: string) => void
-  audioFormats: Format[]
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectAudio: (formatId: string) => void;
+  audioFormats: Format[];
 }
 
 const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes"
-  const k = 1024
-  const sizes = ["Bytes", "KB", "MB", "GB"]
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-}
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (
+    Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  );
+};
 
-export default function AudioSelector({ isOpen, onClose, onSelectAudio, audioFormats }: AudioSelectorProps) {
+export default function AudioSelector({
+  isOpen,
+  onClose,
+  onSelectAudio,
+  audioFormats,
+}: AudioSelectorProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -44,7 +51,10 @@ export default function AudioSelector({ isOpen, onClose, onSelectAudio, audioFor
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Select Audio Format</h3>
-              <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -62,7 +72,8 @@ export default function AudioSelector({ isOpen, onClose, onSelectAudio, audioFor
                     <div className="text-left">
                       <p className="font-medium">{format.format_note}</p>
                       <p className="text-sm text-gray-600">
-                        {format.ext.toUpperCase()} • {formatFileSize(format.filesize)}
+                        {format.ext.toUpperCase()} •{" "}
+                        {formatFileSize(format.filesize)}
                       </p>
                     </div>
                   </div>
@@ -74,6 +85,5 @@ export default function AudioSelector({ isOpen, onClose, onSelectAudio, audioFor
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }
-
