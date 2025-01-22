@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/m-d-nabeel/ytdl-web/internal/api"
+	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
 )
 
 type DownloadResponse struct {
@@ -19,15 +19,15 @@ type Server struct {
 	httpServer *http.Server
 	router     *http.ServeMux
 	wg         sync.WaitGroup
-	api        *api.API
+	dlapi      *dlapi.DLAPI
 	port       string
 }
 
 // NewServer creates a new server instance with the given config
-func NewServer(api *api.API) *Server {
+func NewServer(dlapi *dlapi.DLAPI) *Server {
 	s := &Server{
 		router: http.NewServeMux(),
-		api:    api,
+		dlapi:  dlapi,
 		port:   ":8080",
 	}
 

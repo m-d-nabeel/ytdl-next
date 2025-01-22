@@ -1,4 +1,4 @@
-package api
+package dlapi
 
 import (
 	"os/exec"

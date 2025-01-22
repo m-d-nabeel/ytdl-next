@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/m-d-nabeel/ytdl-web/internal/api"
+	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
 )
 
 func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
@@ -25,13 +25,13 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mediaInfo, ok := s.api.Cache.Data[mediaURL]
+	mediaInfo, ok := s.dlapi.Cache.Data[mediaURL]
 	if !ok {
 		http.Error(w, "Please fetch video information before downloading", http.StatusBadRequest)
 		return
 	}
 
-	cmd := api.GetMediaByFormatID(mediaURL, formatID)
+	cmd := dlapi.GetMediaByFormatID(mediaURL, formatID)
 
 	// Get stdout pipe
 	stdout, err := cmd.StdoutPipe()

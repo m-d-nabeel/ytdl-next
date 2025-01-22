@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/m-d-nabeel/ytdl-web/internal/api"
+	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
 )
 
 func (s *Server) handleYTInfo(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +23,7 @@ func (s *Server) handleYTInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	details, ok := s.api.Cache.Data[mediaUrl]
+	details, ok := s.dlapi.Cache.Data[mediaUrl]
 	if ok {
 		log.Println("Cache Hit")
 		if err := json.NewEncoder(w).Encode(details); err != nil {
@@ -33,20 +33,20 @@ func (s *Server) handleYTInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Println("Cache Miss")
-	cmd := api.GetVideoInfoCmd(mediaUrl)
+	cmd := dlapi.GetVideoInfoCmd(mediaUrl)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to run yt-dlp: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	if err := api.ParseYTMediaInfo(output, &details); err != nil {
+	if err := dlapi.ParseYTMediaInfo(output, &details); err != nil {
 		http.Error(w, fmt.Sprintf("Error parsing media info: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	s.api.Cache.Data[mediaUrl] = details
-	if err := s.api.Cache.SaveCache(); err != nil {
+	s.dlapi.Cache.Data[mediaUrl] = details
+	if err := s.dlapi.Cache.SaveCache(); err != nil {
 		log.Printf("Failed to save cache: %v", err)
 	}
 

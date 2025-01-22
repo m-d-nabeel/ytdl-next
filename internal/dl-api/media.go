@@ -1,19 +1,19 @@
-package api
+package dlapi
 
 import (
 	"github.com/m-d-nabeel/ytdl-web/internal/cache"
 )
 
-type API struct {
+type DLAPI struct {
 	Cache *cache.Cache
 }
 
-func NewAPI(path string) *API {
-	api := &API{
+func NewDLAPI(path string) *DLAPI {
+	dlapi := &DLAPI{
 		Cache: &cache.Cache{
 			Path: path,
 		},
 	}
-	api.Cache.LoadCache()
-	return api
+	dlapi.Cache.LoadCache()
+	return dlapi
 }

@@ -3,20 +3,20 @@ package main
 import (
 	"log"
 
-	"github.com/m-d-nabeel/ytdl-web/internal/api"
+	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
 	"github.com/m-d-nabeel/ytdl-web/internal/server"
 )
 
 func main() {
-	api := api.NewAPI(".cache")
+	dlapi := dlapi.NewDLAPI(".cache")
 	defer func() {
-		err := api.Cache.SaveCache()
+		err := dlapi.Cache.SaveCache()
 		if err != nil {
 			log.Println("Error saving cache")
 		}
 	}()
 
-	srv := server.NewServer(api)
+	srv := server.NewServer(dlapi)
 
 	err := srv.Start()
 	if err != nil {
