@@ -2,7 +2,7 @@
 
 build: build-web build-server
 
-build-run: build run
+build-run: build ./media-dl 
 
 build-web:
 	cd website && npm run build
@@ -10,8 +10,5 @@ build-web:
 build-server:
 	go build -o media-dl cmd/media-dl/main.go
 
-run:
-	./media-dl
-
-run-debug:
+debug-run:
 	cd website && npm run dev &	go run cmd/media-dl/main.go
