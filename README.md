@@ -56,7 +56,6 @@ Browser <-> Go Server <-> yt-dlp
 
 ## License  
 
-This project is licensed under the [MIT License](LICENSE).  
 Note: This project uses [yt-dlp](https://github.com/yt-dlp/yt-dlp), which is licensed under the Unlicense/Public Domain (source code) and GNU GPL v3+ (binary/installer).  
 
 For more details, see the [yt-dlp license](https://github.com/yt-dlp/yt-dlp/blob/master/LICENSE).  
