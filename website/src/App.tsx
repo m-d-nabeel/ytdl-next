@@ -33,9 +33,16 @@ const CodecIndicator = ({ format }: { format: Format }) => {
         title={`Video: ${hasVideo ? format.vcodec : "No video"}`}
       >
         {hasVideo ? (
-          <Video className="w-3 h-3 text-green-600" />
+          <>
+            <Video className="w-3 h-3 text-green-600" />
+            <p>{format.vcodec}</p>
+          </>
         ) : (
-          <X className="w-3 h-3 text-red-600" />
+          <>
+
+            <X className="w-3 h-3 text-red-600" />
+            <p>{format.acodec}</p>
+          </>
         )}
       </div>
       <div

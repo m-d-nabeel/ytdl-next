@@ -24,25 +24,15 @@ A high-performance media streaming application that leverages [yt-dlp](https://g
 
 ## Quick Start  
 
-1. Install `yt-dlp`:  
-   ```bash
-   pip install yt-dlp
-   ```  
-
-2. Install frontend dependencies:  
+1. Install frontend dependencies:  
    ```bash
    cd website
    npm install    # or bun install / yarn
    ```  
 
-3. Build and run the project:  
+2. Build and run the project:  
    ```bash
    make build-run
-   ```  
-
-4. For development with hot reloading:  
-   ```bash
-   make run-debug
    ```  
 
 ## System Design  
