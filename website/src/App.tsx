@@ -39,7 +39,6 @@ const CodecIndicator = ({ format }: { format: Format }) => {
           </>
         ) : (
           <>
-
             <X className="w-3 h-3 text-red-600" />
             <p>{format.acodec}</p>
           </>
@@ -101,7 +100,8 @@ export default function App() {
       setStatus("Select a quality to download:");
     } catch (error) {
       setError(
-        `Error: ${error instanceof Error ? error.message : "An unknown error occurred"
+        `Error: ${
+          error instanceof Error ? error.message : "An unknown error occurred"
         }`
       );
     } finally {
@@ -270,8 +270,9 @@ export default function App() {
                 whileHover={{ backgroundColor: "#e5e7eb" }}
               >
                 <ChevronDown
-                  className={`w-5 h-5 mr-2 transform transition-transform ${expanded ? "rotate-180" : ""
-                    }`}
+                  className={`w-5 h-5 mr-2 transform transition-transform ${
+                    expanded ? "rotate-180" : ""
+                  }`}
                 />
                 {expanded ? "Hide Formats" : "Show Formats"}
               </motion.button>
