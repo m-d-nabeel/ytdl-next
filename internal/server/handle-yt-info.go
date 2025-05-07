@@ -45,7 +45,7 @@ func (s *Server) handleYTInfo(w http.ResponseWriter, r *http.Request) {
 	fetchAndServeMediaInfo(s, w, r, mediaUrl)
 }
 
-func fetchAndServeMediaInfo(s *Server, w http.ResponseWriter, r *http.Request, mediaUrl string) {
+func fetchAndServeMediaInfo(s *Server, w http.ResponseWriter, _ *http.Request, mediaUrl string) {
 	var details types.YTMediaInfo
 
 	cmd := dlapi.GetVideoInfoCmd(mediaUrl)

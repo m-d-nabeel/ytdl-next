@@ -10,8 +10,8 @@ import (
 	"sync"
 )
 
-// Temporary extension for downloads in progress
-const DownloadInProgressExt = ".ytdlp"
+// Removing the temporary extension constant as we no longer need it
+// const DownloadInProgressExt = ".ytdlp"
 
 func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -99,18 +99,14 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 		filename := sanitizeFilename(mediaInfo.Title)
 		extension := guessFileExtension(formatID)
 
-		// Create the final and temporary filenames
+		// Create the final filename (no more temporary filename)
 		finalFilename := fmt.Sprintf("%s.%s", filename, extension)
-		tempFilename := fmt.Sprintf("%s.%s%s", filename, extension, DownloadInProgressExt)
 
 		// Set content type based on file extension
 		w.Header().Set("Content-Type", s.getContentType(finalFilename))
 
-		// Use temporary extension for downloads in progress
-		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, tempFilename))
-
-		// Add custom header to indicate final filename for potential client-side renaming
-		w.Header().Set("X-Final-Filename", finalFilename)
+		// Set content disposition with final filename
+		w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, finalFilename))
 
 		// If we have a file size, set Content-Length header for better download experience
 		if downloadResp.FileSize > 0 {
