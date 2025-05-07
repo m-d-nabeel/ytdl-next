@@ -1,6 +1,8 @@
 package dlapi
 
 import (
+	"log"
+
 	"github.com/m-d-nabeel/ytdl-web/internal/cache"
 )
 
@@ -9,11 +11,15 @@ type DLAPI struct {
 }
 
 func NewDLAPI(path string) *DLAPI {
-	dlapi := &DLAPI{
-		Cache: &cache.Cache{
-			Path: path,
-		},
+	// Initialize Badger DB cache
+	cacheInstance, err := cache.NewCache(path)
+	if err != nil {
+		log.Printf("Failed to initialize cache: %v", err)
+		log.Printf("Continuing without cache...")
+		return &DLAPI{Cache: nil}
 	}
-	dlapi.Cache.LoadCache()
-	return dlapi
+
+	return &DLAPI{
+		Cache: cacheInstance,
+	}
 }

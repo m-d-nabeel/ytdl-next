@@ -27,9 +27,15 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get media info from cache
-	mediaInfo, ok := s.dlapi.Cache.Data[mediaURL]
-	if !ok {
+	// Check if the Cache is initialized
+	if s.dlapi.Cache == nil {
+		http.Error(w, "Cache not available, please fetch video information before downloading", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Get media info from cache using the Get method
+	mediaInfo, err := s.dlapi.Cache.Get(mediaURL)
+	if err != nil || mediaInfo == nil {
 		http.Error(w, "Please fetch video information before downloading", http.StatusBadRequest)
 		return
 	}
@@ -72,7 +78,7 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Try to enqueue the download
-	err := s.downloadManager.EnqueueDownload(downloadReq)
+	err = s.downloadManager.EnqueueDownload(downloadReq)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Server busy: %v", err), http.StatusServiceUnavailable)
 		return

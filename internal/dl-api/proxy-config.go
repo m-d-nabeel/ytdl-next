@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -80,14 +81,34 @@ func LoadProxyConfig(filename string) (*ProxyConfigFile, error) {
 		pm.userAgents = config.UserAgents
 	}
 
-	// Add all configured proxies
+	// Filter out example proxies to prevent connection errors
+	var validProxies []ProxyConfig
 	for _, proxy := range config.Proxies {
+		// Skip proxies that contain "example" in the URL
+		if strings.Contains(strings.ToLower(proxy.URL), "example") {
+			log.Printf("Skipping example proxy: %s", proxy.URL)
+			continue
+		}
+		validProxies = append(validProxies, proxy)
+	}
+
+	// Add all valid configured proxies
+	for _, proxy := range validProxies {
 		pm.AddProxy(proxy)
 	}
 
+	// Update the config with only valid proxies
+	config.Proxies = validProxies
+
 	// Set default proxy
 	if config.DefaultProxy != "" {
-		pm.SetDefaultProxy(config.DefaultProxy)
+		// Skip default proxy if it's an example
+		if !strings.Contains(strings.ToLower(config.DefaultProxy), "example") {
+			pm.SetDefaultProxy(config.DefaultProxy)
+		} else {
+			log.Printf("Skipping example default proxy: %s", config.DefaultProxy)
+			config.DefaultProxy = ""
+		}
 	}
 
 	// Set time gaps if provided
