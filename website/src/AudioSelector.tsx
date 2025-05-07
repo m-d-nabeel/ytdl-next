@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Music, X } from "lucide-react";
+import { Music, X, CheckCircle } from "lucide-react";
 import { Format, formatFileSize } from "./util";
 
 export const AudioSelector = ({
@@ -38,26 +38,43 @@ export const AudioSelector = ({
               <X className="w-6 h-6" />
             </button>
           </div>
+          
+          <div className="mb-4">
+            <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-700 flex items-start">
+              <CheckCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
+              <span>Formats marked as "Compatible" will work on most devices and browsers.</span>
+            </div>
+          </div>
+          
           <div className="space-y-2">
             {audioFormats.map((format) => (
               <motion.button
                 key={format.format_id}
-                className="w-full bg-gray-100 p-3 rounded-lg flex items-center justify-between hover:bg-gray-200 transition-colors"
+                className={`w-full p-3 rounded-lg flex items-center justify-between transition-colors
+                  ${format.is_compatible 
+                    ? "bg-green-50 hover:bg-green-100 border border-green-200" 
+                    : "bg-gray-100 hover:bg-gray-200"}`}
                 onClick={() => onSelectAudio(format.format_id)}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center">
-                  <Music className="w-5 h-5 mr-3 text-blue-500" />
+                  <Music className={`w-5 h-5 mr-3 ${format.is_compatible ? "text-green-500" : "text-blue-500"}`} />
                   <div className="text-left">
-                    <p className="font-medium">{format.format_note}</p>
+                    <div className="flex items-center">
+                      <p className="font-medium">{format.quality_label || format.format_note}</p>
+                      {format.is_compatible && (
+                        <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">
+                          Compatible
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">
-                      {format.ext.toUpperCase()} •{" "}
-                      {formatFileSize(format.filesize)}
+                      {format.acodec} • {format.ext.toUpperCase()} • {formatFileSize(format.filesize)}
                     </p>
                   </div>
                 </div>
-                <span className="text-blue-500">Select</span>
+                <span className={format.is_compatible ? "text-green-500" : "text-blue-500"}>Select</span>
               </motion.button>
             ))}
           </div>

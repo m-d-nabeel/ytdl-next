@@ -6,6 +6,9 @@ export interface Format {
     format_note: string;
     acodec: string;
     vcodec?: string;
+    is_compatible: boolean;     // Flag for cross-platform compatibility
+    quality?: object;      // Original quality field from YouTube API (may be number or string)
+    quality_label?: string;     // Our computed human-readable quality description
 }
 
 export interface VideoData {

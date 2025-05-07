@@ -28,13 +28,18 @@ const CodecIndicator = ({ format }: { format: Format }) => {
 
   return (
     <div className="flex gap-2 items-center text-xs">
+      {format.is_compatible && (
+        <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
+          Compatible
+        </span>
+      )}
       <div
         className="flex items-center gap-1"
         title={`Video: ${hasVideo ? format.vcodec : "No video"}`}
       >
         {hasVideo ? (
           <>
-            <Video className="w-3 h-3 text-green-600" />
+            <Video className={`w-3 h-3 ${format.is_compatible ? "text-green-600" : "text-blue-600"}`} />
             <p>{format.vcodec}</p>
           </>
         ) : (
@@ -49,7 +54,7 @@ const CodecIndicator = ({ format }: { format: Format }) => {
         title={`Audio: ${hasAudio ? format.acodec : "No audio"}`}
       >
         {hasAudio ? (
-          <Music className="w-3 h-3 text-green-600" />
+          <Music className={`w-3 h-3 ${format.is_compatible ? "text-green-600" : "text-blue-600"}`} />
         ) : (
           <X className="w-3 h-3 text-red-600" />
         )}
@@ -227,20 +232,38 @@ export default function App() {
                   <h3 className="text-xl font-semibold mb-4">
                     Available Formats
                   </h3>
+                  
+                  <div className="bg-blue-50 p-3 mb-4 rounded-lg text-sm text-blue-700 flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>Formats marked as <span className="font-semibold">Compatible</span> will work on most devices and browsers. Other formats may require specific media players.</p>
+                  </div>
+                  
                   <div className="space-y-2">
                     {videoData.formats
                       .filter((format) => format.filesize && format.resolution)
+                      // First display compatible formats, then other formats
+                      .sort((a, b) => {
+                        if (a.is_compatible !== b.is_compatible) {
+                          return a.is_compatible ? -1 : 1;
+                        }
+                        return b.filesize - a.filesize;
+                      })
                       .map((format) => (
                         <motion.div
                           key={format.format_id}
-                          className="bg-white p-4 rounded-lg shadow flex items-center justify-between"
+                          className={`p-4 rounded-lg shadow flex items-center justify-between
+                            ${format.is_compatible 
+                              ? "bg-green-50 border border-green-200" 
+                              : "bg-white"}`}
                           whileHover={{ scale: 1.02 }}
                           transition={{ duration: 0.2 }}
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <p className="font-semibold">
-                                {format.format_note}
+                                {format.quality_label || format.format_note}
                               </p>
                               <CodecIndicator format={format} />
                             </div>
@@ -253,7 +276,7 @@ export default function App() {
                             onClick={() => handleDownload(format)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold ml-4 flex items-center"
+                            className={`${format.is_compatible ? "bg-green-600" : "bg-blue-500"} text-white px-4 py-2 rounded-full text-sm font-semibold ml-4 flex items-center`}
                           >
                             <Download className="w-4 h-4 mr-2" />
                             Download
