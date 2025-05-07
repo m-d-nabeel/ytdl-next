@@ -8,13 +8,16 @@ import (
 )
 
 func main() {
-	dlapi := dlapi.NewDLAPI(".cache")
-	defer func() {
-		err := dlapi.Cache.SaveCache()
-		if err != nil {
-			log.Println("Error saving cache")
-		}
-	}()
+	dlapi := dlapi.NewDLAPI(".badger-cache")
+	// Close the Badger DB when the application exits
+	if dlapi.Cache != nil {
+		defer func() {
+			log.Println("Closing Badger DB...")
+			if err := dlapi.Cache.Close(); err != nil {
+				log.Printf("Error closing cache: %v", err)
+			}
+		}()
+	}
 
 	srv := server.NewServer(dlapi)
 

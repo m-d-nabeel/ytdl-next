@@ -13,6 +13,7 @@ func (s *Server) setupRoutes() {
 	// API routes
 	s.router.HandleFunc("/api/yt/download", s.handleYTDownload)
 	s.router.HandleFunc("/api/yt/info", s.handleYTInfo)
+	s.router.HandleFunc("/api/proxy/status", s.handleProxyStatus) // New route for proxy status
 
 	// Serve static files
 	var staticHandler http.Handler
