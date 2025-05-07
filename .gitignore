@@ -1,2 +1,6 @@
 media-dl
 .cache
+internal/embedfs/web/assets
+internal/embedfs/web/index.html
+internal/embedfs/web/vite.svg
+media-dl

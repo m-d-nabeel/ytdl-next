@@ -3,8 +3,8 @@ package server
 import (
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
-	"sync"
 
 	dlapi "github.com/m-d-nabeel/ytdl-web/internal/dl-api"
 )
@@ -16,19 +16,19 @@ type DownloadResponse struct {
 }
 
 type Server struct {
-	httpServer *http.Server
-	router     *http.ServeMux
-	wg         sync.WaitGroup
-	dlapi      *dlapi.DLAPI
-	port       string
+	router  *http.ServeMux
+	dlapi   *dlapi.DLAPI
+	port    string
+	devMode bool
 }
 
 // NewServer creates a new server instance with the given config
 func NewServer(dlapi *dlapi.DLAPI) *Server {
 	s := &Server{
-		router: http.NewServeMux(),
-		dlapi:  dlapi,
-		port:   ":8080",
+		router:  http.NewServeMux(),
+		dlapi:   dlapi,
+		port:    ":8080",
+		devMode: os.Getenv("DEV_MODE") == "true",
 	}
 
 	s.setupRoutes()
@@ -38,7 +38,7 @@ func NewServer(dlapi *dlapi.DLAPI) *Server {
 // Start initializes and starts the server
 func (s *Server) Start() error {
 	log.Printf("Server starting on port %s...", s.port)
-	return http.ListenAndServe(s.port, nil)
+	return http.ListenAndServe(s.port, s.router)
 }
 
 // getContentType determines the content type based on file extension
