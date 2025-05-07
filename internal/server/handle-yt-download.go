@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 )
 
 // Temporary extension for downloads in progress
@@ -92,7 +93,7 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 		filename := sanitizeFilename(mediaInfo.Title)
 		extension := guessFileExtension(formatID)
 
-			// Create the final and temporary filenames
+		// Create the final and temporary filenames
 		finalFilename := fmt.Sprintf("%s.%s", filename, extension)
 		tempFilename := fmt.Sprintf("%s.%s%s", filename, extension, DownloadInProgressExt)
 
@@ -153,24 +154,69 @@ func (s *Server) handleYTDownload(w http.ResponseWriter, r *http.Request) {
 // clientAwareWriter wraps an http.ResponseWriter to detect client disconnections
 type clientAwareWriter struct {
 	http.ResponseWriter
-	cancel func()
+	cancel       func()
+	disconnected bool
+	mutex        sync.Mutex
 }
 
 // Write overrides the standard Write method to check for client disconnection
 func (w *clientAwareWriter) Write(b []byte) (int, error) {
+	w.mutex.Lock()
+	if w.disconnected {
+		w.mutex.Unlock()
+		return 0, io.ErrClosedPipe // Return a standard error for closed connections
+	}
+	w.mutex.Unlock()
+
 	n, err := w.ResponseWriter.Write(b)
 	if err != nil {
-		// If there's an error writing, the client may have disconnected
-		if strings.Contains(err.Error(), "broken pipe") ||
-			strings.Contains(err.Error(), "reset by peer") ||
-			strings.Contains(err.Error(), "connection closed") {
-			log.Println("Client disconnected during write, canceling download")
-			if w.cancel != nil {
-				w.cancel() // Call cancel function to stop the download
+		// List of common error strings that indicate client disconnection
+		disconnectErrors := []string{
+			"broken pipe",
+			"reset by peer",
+			"connection closed",
+			"client disconnected",
+			"connection reset",
+			"write: broken pipe",
+			"i/o timeout",
+			"use of closed network connection",
+		}
+
+		// Check if the error indicates client disconnection
+		errMsg := strings.ToLower(err.Error())
+		for _, msg := range disconnectErrors {
+			if strings.Contains(errMsg, msg) {
+				log.Println("Client disconnected during write, canceling download")
+				w.mutex.Lock()
+				w.disconnected = true
+				w.mutex.Unlock()
+
+				if w.cancel != nil {
+					w.cancel() // Call cancel function to stop the download
+				}
+				return n, err
 			}
 		}
 	}
 	return n, err
+}
+
+// Implement http.Flusher interface to support streaming
+func (w *clientAwareWriter) Flush() {
+	if flusher, ok := w.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
+}
+
+// Implement http.CloseNotifier interface for older HTTP/1.x servers
+// Even though it's deprecated, it helps with compatibility
+func (w *clientAwareWriter) CloseNotify() <-chan bool {
+	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	// If the underlying ResponseWriter doesn't support CloseNotifier,
+	// return a channel that will never close
+	return make(chan bool)
 }
 
 // Other existing functions remain unchanged

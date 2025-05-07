@@ -151,6 +151,43 @@ func (dm *DownloadManager) processDownload(req *DownloadRequest) *DownloadRespon
 	// Start the download in a goroutine
 	errCh := make(chan error, 1)
 	var cmd *exec.Cmd
+	var cmdMutex sync.Mutex
+
+	// Function to forcefully terminate the process if needed
+	forceKillProcess := func() {
+		cmdMutex.Lock()
+		defer cmdMutex.Unlock()
+		if cmd != nil && cmd.Process != nil {
+			pid := cmd.Process.Pid
+			log.Printf("Force killing download process (PID: %d) for %s", pid, req.Title)
+
+			// First try a graceful termination
+			if err := cmd.Process.Signal(os.Interrupt); err != nil {
+				log.Printf("Failed to send interrupt signal: %v", err)
+			}
+
+			// Wait a moment for graceful termination
+			time.Sleep(500 * time.Millisecond)
+
+			// Check if process is still running
+			if cmd.ProcessState == nil {
+				// Force kill the process
+				if err := cmd.Process.Kill(); err != nil {
+					log.Printf("Failed to kill process: %v", err)
+				} else {
+					log.Printf("Successfully killed process %d", pid)
+				}
+			}
+		}
+	}
+
+	// Set up context monitoring for cancellation
+	go func() {
+		<-downloadCtx.Done()
+		log.Printf("Context canceled for download: %s", req.Title)
+		forceKillProcess() // Force kill if context is canceled
+		writer.CloseWithError(fmt.Errorf("download canceled"))
+	}()
 
 	// Set up and start the download command
 	go func() {
@@ -158,6 +195,7 @@ func (dm *DownloadManager) processDownload(req *DownloadRequest) *DownloadRespon
 
 		// Create the command with context for proper cancellation
 		cmd = createDownloadCommandWithContext(downloadCtx, req.MediaURL, req.FormatID)
+
 		if cmd == nil {
 			errCh <- fmt.Errorf("failed to create download command")
 			return
@@ -181,8 +219,13 @@ func (dm *DownloadManager) processDownload(req *DownloadRequest) *DownloadRespon
 
 		// Log stderr in background
 		go func() {
-			if _, err = io.Copy(os.Stderr, stderrPipe); err != nil {
+			stderrData, err := io.ReadAll(stderrPipe)
+			if err != nil && downloadCtx.Err() == nil {
 				log.Printf("Error reading stderr: %v", err)
+			}
+
+			if len(stderrData) > 0 && downloadCtx.Err() == nil {
+				log.Printf("yt-dlp stderr output for %s: %s", req.Title, string(stderrData))
 			}
 		}()
 
@@ -192,34 +235,77 @@ func (dm *DownloadManager) processDownload(req *DownloadRequest) *DownloadRespon
 			return
 		}
 
-		// Copy the output to our pipe
-		written, err := io.Copy(writer, stdoutPipe)
-		if err != nil {
-			// Check if the error is due to cancellation
+		log.Printf("Download process started with PID %d for %s", cmd.Process.Pid, req.Title)
+
+		// Create a buffer for copying
+		buffer := make([]byte, 32*1024) // 32KB buffer
+
+		// Copy the output to our pipe with regular context checks
+		var written int64
+		for {
+			// Check context regularly
 			if downloadCtx.Err() != nil {
 				errCh <- fmt.Errorf("download canceled: %w", downloadCtx.Err())
-			} else {
-				errCh <- fmt.Errorf("error streaming download: %w", err)
+				return
 			}
-			return
+
+			// Read from stdout pipe
+			nr, readErr := stdoutPipe.Read(buffer)
+			if nr > 0 {
+				// Write to pipe
+				nw, writeErr := writer.Write(buffer[:nr])
+				if nw > 0 {
+					written += int64(nw)
+				}
+				if writeErr != nil {
+					errCh <- fmt.Errorf("error writing to pipe: %w", writeErr)
+					return
+				}
+				if nw != nr {
+					errCh <- fmt.Errorf("short write: wrote %d bytes but read %d bytes", nw, nr)
+					return
+				}
+			}
+
+			if readErr != nil {
+				if readErr == io.EOF {
+					break // Normal end of stream
+				}
+				errCh <- fmt.Errorf("error reading from stdout: %w", readErr)
+				return
+			}
 		}
 
-		log.Printf("Download completed: %s (%d bytes)", req.Title, written)
+		log.Printf("Download data streaming completed: %s (%d bytes)", req.Title, written)
 
-		// Wait for command to complete
-		if err := cmd.Wait(); err != nil {
-			// Check if this was due to cancellation
-			if downloadCtx.Err() != nil {
-				errCh <- fmt.Errorf("download canceled: %w", downloadCtx.Err())
+		// Wait for command to complete, but don't block indefinitely
+		waitCh := make(chan error, 1)
+		go func() {
+			waitCh <- cmd.Wait()
+		}()
+
+		// Wait with timeout
+		select {
+		case err := <-waitCh:
+			if err != nil {
+				// Check if this was due to cancellation
+				if downloadCtx.Err() != nil {
+					errCh <- fmt.Errorf("download canceled: %w", downloadCtx.Err())
+				} else {
+					errCh <- fmt.Errorf("command error: %w", err)
+				}
 			} else {
-				errCh <- fmt.Errorf("command error: %w", err)
+				errCh <- nil // Success
 			}
-			return
+		case <-time.After(5 * time.Second):
+			// If command doesn't exit within 5 seconds, assume it's hung
+			log.Printf("Command wait timeout for %s, forcefully terminating", req.Title)
+			forceKillProcess()
+			errCh <- fmt.Errorf("command wait timeout")
 		}
-
-		errCh <- nil
 	}()
 
+	// Create and return the download response
 	return &DownloadResponse{
 		Status:   "success",
 		Error:    "",
@@ -227,7 +313,11 @@ func (dm *DownloadManager) processDownload(req *DownloadRequest) *DownloadRespon
 		Reader:   reader,
 		ErrorCh:  errCh,
 		FileSize: fileSize,
-		CancelFn: cancelDownload,
+		CancelFn: func() {
+			log.Printf("Cancel function called for download: %s", req.Title)
+			cancelDownload()
+			forceKillProcess() // Also force kill the process when cancellation is requested
+		},
 	}
 }
 

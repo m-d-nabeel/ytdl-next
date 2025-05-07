@@ -34,13 +34,30 @@ type Server struct {
 }
 
 // NewServer creates a new server instance with the given config
-func NewServer(dlapi *dlapi.DLAPI) *Server {
+func NewServer(dlapiInstance *dlapi.DLAPI) *Server {
 	// Calculate a reasonable number of workers based on available CPU cores
 	maxWorkers := min(runtime.NumCPU(), 4)
 
+	// Initialize and load proxy configuration
+	const proxyConfigFilename = "proxies.json"
+
+	// Use package-level functions by using the package name, not the variable
+	proxyConfig, err := dlapi.LoadProxyConfig(proxyConfigFilename)
+	if err != nil {
+		log.Printf("Warning: Error loading proxy configuration: %v", err)
+		// Continue with default proxy settings
+	} else if proxyConfig != nil && len(proxyConfig.Proxies) == 0 {
+		// Create a default config file if none exists
+		if err := dlapi.InitializeDefaultProxyConfig(proxyConfigFilename); err != nil {
+			log.Printf("Warning: Could not create default proxy config: %v", err)
+		} else {
+			log.Printf("Created default proxy configuration. Please edit %s in your home directory to add your own proxies.", proxyConfigFilename)
+		}
+	}
+
 	s := &Server{
 		router:          http.NewServeMux(),
-		dlapi:           dlapi,
+		dlapi:           dlapiInstance,
 		port:            ":8080",
 		devMode:         os.Getenv("DEV_MODE") == "true",
 		downloadManager: NewDownloadManager(maxWorkers, 50),
